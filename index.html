@@ -1,0 +1,1879 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ระบบเงินเดือน N.O.K. (Cloud)</title>
+    
+    <!-- Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Note: html2pdf.js is removed/deprecated as we use PDFService now -->
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        body { background-color: #f8fafc; color: #1e293b; font-family: 'Prompt', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .glass-sidebar { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); }
+        .nav-item { display: flex; align-items: center; padding: 12px 20px; border-radius: 12px; margin-bottom: 4px; transition: all 0.2s; color: #94a3b8; font-weight: 500; cursor: pointer; }
+        .nav-item:hover { background: rgba(255,255,255,0.05); color: #f1f5f9; transform: translateX(4px); }
+        .nav-item.active { background: linear-gradient(90deg, #0ea5e9 0%, #0284c7 100%); color: white; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3); }
+        .page { display: none; opacity: 0; transform: translateY(10px); transition: all 0.3s ease-out; }
+        .page.active { display: block; opacity: 1; transform: translateY(0); }
+        .form-control { width: 100%; height: 48px; padding: 0 16px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; transition: all 0.2s; font-size: 0.95rem; }
+        .form-control:focus { outline: none; border-color: #0ea5e9; ring: 2px solid rgba(14, 165, 233, 0.2); }
+        .card { background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border: 1px solid #f1f5f9; padding: 24px; }
+        @media (max-width: 768px) { .form-control { height: 52px; font-size: 16px; } .card { padding: 16px; } }
+        .shift-radio:checked + div { background-color: #f0f9ff; border-color: #0ea5e9; color: #0284c7; }
+        .shift-radio:checked + div .check-icon { opacity: 1; transform: scale(1); }
+        .tab-btn { padding: 10px 20px; border-radius: 12px; font-weight: 600; color: #64748b; cursor: pointer; transition: all 0.2s; }
+        .tab-btn.active { background-color: #e0f2fe; color: #0284c7; }
+        
+        /* Print Styles - Mostly deprecated but kept for compatibility */
+        .print-table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: fixed; }
+        .print-table th, .print-table td { border: 1px solid #cbd5e1; padding: 6px; white-space: nowrap; vertical-align: middle; }
+        .print-table th { background-color: #f1f5f9; font-weight: bold; text-align: center; }
+        @media print {
+            body * { visibility: hidden; }
+            #print-section, #print-section * { visibility: visible; }
+            #print-section { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+    <!-- Login Overlay -->
+    <div id="login-overlay" class="fixed inset-0 bg-slate-900 z-[10000] flex flex-col justify-center items-center p-6 transition-opacity duration-500">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
+            <div class="mb-6"><div class="w-16 h-16 bg-blue-600 rounded-xl mx-auto flex items-center justify-center text-white text-2xl shadow-lg"><i class="fa-solid fa-lock"></i></div></div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">ระบบเงินเดือน N.O.K.</h2>
+            <p class="text-slate-500 mb-6 text-sm">กรุณากรอกรหัสผ่านทีมเพื่อเข้าใช้งาน</p>
+            <input type="password" id="team-pin" class="form-control text-center text-2xl tracking-widest font-bold mb-4" placeholder="••••" maxlength="4" inputmode="numeric">
+            <button onclick="checkPin()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition">เข้าใช้งาน</button>
+            <p id="login-error" class="text-red-500 text-xs mt-3 hidden">รหัสผ่านไม่ถูกต้อง</p>
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <div id="loading-overlay" class="fixed inset-0 bg-white/95 backdrop-blur-md z-[9999] flex flex-col justify-center items-center text-center p-6 hidden">
+        <div class="relative mb-6"><div class="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div></div>
+        <h2 class="text-xl font-bold text-slate-700 mb-2" id="loading-title">กำลังเชื่อมต่อฐานข้อมูล Cloud...</h2>
+        <p class="text-sm text-slate-500 max-w-md" id="loading-desc">ระบบกำลังโหลดข้อมูลล่าสุดจาก Supabase</p>
+    </div>
+
+    <!-- Mobile Header -->
+    <div class="md:hidden fixed top-0 left-0 right-0 h-16 bg-slate-900 z-40 flex items-center justify-between px-4 shadow-md">
+        <div class="flex items-center text-white font-bold text-lg"><i class="fa-solid fa-building-user text-sky-400 mr-2"></i> N.O.K.</div>
+        <button onclick="toggleSidebar()" class="text-white p-2"><i class="fa-solid fa-bars text-xl"></i></button>
+    </div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-72 glass-sidebar text-white z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 shadow-2xl flex flex-col">
+        <div class="h-20 flex items-center px-8 font-bold text-2xl tracking-wide border-b border-slate-700/50">
+            <div class="bg-gradient-to-br from-sky-400 to-blue-600 w-10 h-10 rounded-lg flex items-center justify-center mr-3 shadow-lg"><i class="fa-solid fa-building text-white text-lg"></i></div><span>N.O.K.</span>
+        </div>
+        <nav class="flex-1 overflow-y-auto p-4 space-y-1">
+            <div class="text-xs font-bold text-slate-500 uppercase px-4 mb-2 mt-2">เมนูหลัก</div>
+            <a onclick="nav('dashboard')" class="nav-item active"><i class="fa-solid fa-chart-pie w-8"></i> <span>หน้าหลัก</span></a>
+            <a onclick="nav('daily')" class="nav-item"><i class="fa-solid fa-clock w-8"></i> <span>บันทึกกะ/OT</span></a>
+            <a onclick="nav('payroll')" class="nav-item"><i class="fa-solid fa-file-invoice-dollar w-8"></i> <span>บันทึกเงินเดือน</span></a>
+            <a onclick="nav('contractor')" class="nav-item"><i class="fa-solid fa-helmet-safety w-8"></i> <span>งานรับเหมา</span></a>
+            <a onclick="nav('ledger')" class="nav-item"><i class="fa-solid fa-book w-8"></i> <span>รายรับ-รายจ่าย</span></a>
+            <div class="text-xs font-bold text-slate-500 uppercase px-4 mb-2 mt-6">จัดการข้อมูล</div>
+            <a onclick="nav('employees')" class="nav-item"><i class="fa-solid fa-users w-8"></i> <span>ข้อมูลพนักงาน</span></a>
+            <a onclick="nav('reports')" class="nav-item"><i class="fa-solid fa-print w-8"></i> <span>รายงานสรุป</span></a>
+            <a onclick="nav('settings')" class="nav-item"><i class="fa-solid fa-sliders w-8"></i> <span>ตั้งค่าระบบ</span></a>
+            <a onclick="logout()" class="nav-item text-red-400 mt-auto pt-10"><i class="fa-solid fa-right-from-bracket w-8"></i> <span>ออกจากระบบ</span></a>
+        </nav>
+        <div class="p-4 border-t border-slate-700/50 bg-slate-800/50"><div class="flex items-center"><div class="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-green-400"><i class="fa-solid fa-wifi"></i></div><div class="ml-3"><p class="text-sm font-bold text-white">Online</p><p class="text-xs text-slate-400">Supabase DB</p></div></div></div>
+    </aside>
+    <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto h-full pt-16 md:pt-0 md:pl-72 bg-slate-50 w-full">
+        <div class="max-w-7xl mx-auto p-4 md:p-8">
+
+            <!-- DASHBOARD -->
+            <div id="dashboard" class="page active">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+                    <div><h2 class="text-2xl md:text-3xl font-bold text-slate-800">ภาพรวมบริษัท</h2><p class="text-slate-500 mt-1">สรุปข้อมูลประจำวัน</p></div>
+                    <div class="mt-4 md:mt-0 px-4 py-2 bg-white rounded-full shadow-sm border border-slate-200 text-sm font-medium text-slate-600 flex items-center"><i class="fa-regular fa-calendar mr-2 text-blue-500"></i> <span id="dash-date-display"></span></div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="card border-l-4 border-l-blue-500 flex items-center justify-between"><div><p class="text-slate-500 text-sm font-medium mb-1">พนักงานทั้งหมด</p><h3 class="text-3xl font-bold text-slate-800" id="dash-total">0</h3></div><div class="w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center text-xl"><i class="fa-solid fa-users"></i></div></div>
+                    <div class="card border-l-4 border-l-orange-500 flex items-center justify-between"><div><p class="text-slate-500 text-sm font-medium mb-1">ยอดค่าแรงวันนี้</p><h3 class="text-3xl font-bold text-orange-600" id="dash-today-cost">0</h3></div><div class="w-12 h-12 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center text-xl"><i class="fa-solid fa-coins"></i></div></div>
+                    <div class="card border-l-4 border-l-green-500 flex items-center justify-between"><div><p class="text-slate-500 text-sm font-medium mb-1">ยอดจ่ายเดือนล่าสุด</p><h3 class="text-3xl font-bold text-green-600" id="dash-last-month">0</h3></div><div class="w-12 h-12 bg-green-50 text-green-500 rounded-2xl flex items-center justify-center text-xl"><i class="fa-solid fa-money-bill-wave"></i></div></div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                     <div class="card h-80"><h3 class="font-bold text-lg mb-4 text-slate-700">สัดส่วนพนักงาน</h3><div class="relative h-full w-full flex justify-center"><canvas id="empChart"></canvas></div></div>
+                     <div class="card h-80"><h3 class="font-bold text-lg mb-4 text-slate-700">แนวโน้มการจ่ายเงิน</h3><div class="relative h-full w-full"><canvas id="salaryChart"></canvas></div></div>
+                </div>
+            </div>
+
+            <!-- DAILY RECORD -->
+            <div id="daily" class="page">
+                <div class="mb-6"><h2 class="text-2xl md:text-3xl font-bold text-slate-800">บันทึกกะเข้างาน / OT</h2></div>
+                <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+                    <div class="xl:col-span-8 space-y-6">
+                        <div class="card border-0 shadow-md">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div><label class="block text-sm font-bold text-slate-700 mb-2">วันที่ทำงาน</label><input type="date" id="d-date" class="form-control" onchange="filterDailyList(); updateEmpStatsCard()"></div>
+                                <div><label class="block text-sm font-bold text-slate-700 mb-2">พนักงาน</label><select id="d-emp" class="form-control cursor-pointer" onchange="selectDailyEmp()"><option value="">-- เลือกพนักงาน --</option></select><div id="d-pos-display" class="text-sm font-medium text-blue-600 mt-2 h-5 pl-1"></div></div>
+                            </div>
+                            <div id="emp-stats-area" class="mt-4 hidden stats-card">
+                                <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
+                                    <h4 class="text-sm font-bold text-indigo-800 mb-3 flex items-center"><i class="fa-solid fa-chart-line mr-2"></i> สรุปยอดสะสม (งวดปัจจุบัน)</h4>
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                        <div class="bg-white p-3 rounded-lg shadow-sm"><div class="text-slate-500 text-xs mb-1">ทำงาน (วัน)</div><div class="font-bold text-slate-800 text-lg" id="stat-days">0</div></div>
+                                        <div class="bg-white p-3 rounded-lg shadow-sm"><div class="text-slate-500 text-xs mb-1">OT สะสม (บาท)</div><div class="font-bold text-orange-600 text-lg" id="stat-ot">0</div></div>
+                                        <div class="bg-white p-3 rounded-lg shadow-sm"><div class="text-slate-500 text-xs mb-1">ค่าเที่ยว (บาท)</div><div class="font-bold text-purple-600 text-lg" id="stat-trip">0</div></div>
+                                        <div class="bg-white p-3 rounded-lg shadow-sm border-l-4 border-indigo-500"><div class="text-slate-500 text-xs mb-1">รายรับรวม (ประมาณ)</div><div class="font-bold text-indigo-700 text-lg" id="stat-total">0</div></div>
+                                    </div>
+                                    <div class="flex justify-between items-center mt-3 text-xs text-slate-500 px-1"><span><i class="fa-solid fa-triangle-exclamation text-red-400 mr-1"></i> ยอดหักสะสม: <span class="text-red-500 font-bold" id="stat-deduct">0</span> บาท</span><span id="stat-period-label">งวด: -</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="daily-form-area" class="space-y-6 opacity-50 pointer-events-none transition-all duration-300">
+                            <input type="hidden" id="d-record-id">
+                            <div class="card">
+                                 <h3 class="font-bold text-slate-700 mb-4 flex items-center"><i class="fa-regular fa-clock mr-2 text-blue-500"></i> ช่วงเวลาทำงาน (กะ)</h3>
+                                 <div class="grid grid-cols-2 gap-4">
+                                     <label class="cursor-pointer"><input type="radio" name="d-shift" value="Day" class="shift-radio hidden" checked><div class="border-2 border-slate-100 rounded-xl p-4 text-center hover:bg-slate-50 transition relative"><i class="fa-solid fa-sun text-2xl text-orange-400 mb-2 block"></i><span class="font-bold">กะกลางวัน</span><i class="fa-solid fa-circle-check absolute top-2 right-2 text-blue-500 opacity-0 transform scale-50 transition check-icon"></i></div></label>
+                                     <label class="cursor-pointer"><input type="radio" name="d-shift" value="Night" class="shift-radio hidden"><div class="border-2 border-slate-100 rounded-xl p-4 text-center hover:bg-slate-50 transition relative"><i class="fa-solid fa-moon text-2xl text-indigo-400 mb-2 block"></i><span class="font-bold">กะกลางคืน</span><i class="fa-solid fa-circle-check absolute top-2 right-2 text-blue-500 opacity-0 transform scale-50 transition check-icon"></i></div></label>
+                                 </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="card">
+                                    <h3 class="font-bold text-slate-700 mb-4 text-sm uppercase tracking-wider text-gray-400">ค่าแรงรายวัน</h3>
+                                    <div class="mb-3"><label class="text-xs font-bold text-slate-500 mb-1 block">จำนวนเงิน (บาท)</label><input type="number" id="d-wage" class="form-control text-xl font-bold text-slate-700" placeholder="0.00" oninput="calcDaily()"></div>
+                                    <div><label class="text-xs font-bold text-slate-400 mb-1 block">หมายเหตุ</label><input type="text" id="d-remarks" class="form-control text-sm" placeholder="เช่น มาสาย, กลับก่อน"></div>
+                                </div>
+                                <div class="card border-orange-100 bg-orange-50/30">
+                                    <h3 class="font-bold text-orange-700 mb-4 text-sm uppercase tracking-wider">ล่วงเวลา (OT)</h3>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div><label class="text-xs font-bold text-slate-500 mb-1 block">ชั่วโมง</label><input type="number" id="d-ot-hours" class="form-control" oninput="calcDaily()"></div>
+                                        <div><label class="text-xs font-bold text-slate-500 mb-1 block">บาท/ชม.</label><input type="number" id="d-ot-rate" class="form-control" value="50" oninput="calcDaily()"></div>
+                                    </div>
+                                    <div class="mt-3 flex justify-between items-center border-t border-orange-200 pt-2"><span class="text-sm text-orange-600 font-bold">รวม OT</span><span id="d-ot-total-disp" class="text-xl font-bold text-orange-600">0.00</span><input type="hidden" id="d-ot-total"></div>
+                                </div>
+                            </div>
+                            <div class="card border-l-4 border-l-purple-500">
+                                <h3 class="font-bold text-purple-700 mb-4">ค่าเที่ยว & รายได้อื่นๆ</h3>
+                                <div class="space-y-4">
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div><label class="text-xs font-bold text-slate-500 mb-1 block">จำนวนเที่ยว</label><input type="number" id="d-trip-count" class="form-control" oninput="calcDaily()"></div>
+                                        <div><label class="text-xs font-bold text-slate-500 mb-1 block">เรทส่วนต่าง</label><input type="number" id="d-trip-rate" class="form-control" value="10" oninput="calcDaily()"></div>
+                                    </div>
+                                    <p class="text-xs text-right text-purple-500 font-medium" id="trip-threshold-hint"></p>
+                                    <input type="hidden" id="d-trip-bonus">
+                                    <div class="border-t pt-3" id="d-other-income-container"></div>
+                                </div>
+                            </div>
+                            <div class="card border-l-4 border-l-red-500">
+                                <h3 class="font-bold text-red-600 mb-3">หักเงิน</h3>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div><label class="text-xs font-bold text-red-400 mb-1 block">เบิกล่วงหน้า</label><input type="number" id="d-deduct-advance" class="form-control text-red-600 font-medium" oninput="calcDaily()"></div>
+                                    <div><label class="text-xs font-bold text-red-400 mb-1 block">ขาด/ลา</label><input type="number" id="d-deduct-absence" class="form-control text-red-600 font-medium" oninput="calcDaily()"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="xl:col-span-4">
+                        <div class="sticky top-4 space-y-4">
+                            <div class="bg-slate-900 text-white rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+                                <div class="absolute top-0 right-0 p-4 opacity-10"><i class="fa-solid fa-wallet text-9xl"></i></div>
+                                <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-6">สรุปยอดวันนี้</h3>
+                                <div class="space-y-3 mb-6 text-sm">
+                                    <div class="flex justify-between"><span class="text-slate-400">ค่าแรง</span><span id="sum-wage" class="font-medium">0.00</span></div>
+                                    <div class="flex justify-between"><span class="text-orange-400">OT</span><span id="sum-ot" class="font-medium">0.00</span></div>
+                                    <div class="flex justify-between"><span class="text-purple-400">ค่าเที่ยว/อื่นๆ</span><span id="sum-other-all" class="font-medium">0.00</span></div>
+                                    <div class="flex justify-between border-t border-slate-700 pt-2"><span class="text-red-400">หัก</span><span id="sum-deduct" class="font-medium">0.00</span></div>
+                                </div>
+                                <div class="text-right"><span class="text-xs text-slate-400 block mb-1">สุทธิ</span><span class="text-4xl font-bold tracking-tight text-white" id="d-net-total">0.00</span></div>
+                                <div class="flex gap-2 mt-6">
+                                    <button onclick="resetDailyForm()" class="w-1/3 bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl font-medium text-sm transition">ล้างค่า</button>
+                                    <button onclick="saveDaily()" id="btn-save-daily" class="w-2/3 bg-blue-500 hover:bg-blue-400 text-white py-3 rounded-xl font-bold shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed text-lg" disabled>บันทึก</button>
+                                </div>
+                            </div>
+                            <div class="card p-0 overflow-hidden">
+                                <div class="bg-slate-50 px-4 py-3 border-b flex justify-between items-center"><span class="font-bold text-slate-700 text-sm">รายการวันนี้</span><span class="text-xs bg-slate-200 text-slate-600 px-2 py-1 rounded-full" id="daily-count-badge">0</span></div>
+                                <div id="daily-list" class="divide-y divide-slate-100 max-h-[300px] overflow-y-auto"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EMPLOYEES -->
+            <div id="employees" class="page">
+                 <h2 class="text-2xl font-bold text-slate-800 mb-6">ข้อมูลพนักงาน</h2>
+                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-slate-800 text-white p-4 rounded-xl shadow-lg flex justify-between items-center">
+                        <div><p class="text-xs text-slate-400 mb-1">พนักงานทั้งหมด</p><h3 class="text-2xl font-bold" id="estat-total">0</h3></div>
+                        <div class="text-right text-xs text-slate-300"><div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-400"></span> ชาย: <span id="estat-total-m">0</span></div><div class="flex items-center gap-1 mt-1"><span class="w-2 h-2 rounded-full bg-pink-400"></span> หญิง: <span id="estat-total-f">0</span></div></div>
+                    </div>
+                    <div class="bg-blue-600 text-white p-4 rounded-xl shadow-lg flex justify-between items-center">
+                        <div><p class="text-xs text-blue-200 mb-1">พนักงานประจำ</p><h3 class="text-2xl font-bold" id="estat-monthly">0</h3></div>
+                        <div class="text-right text-xs text-blue-100"><div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-300"></span> ชาย: <span id="estat-monthly-m">0</span></div><div class="flex items-center gap-1 mt-1"><span class="w-2 h-2 rounded-full bg-pink-300"></span> หญิง: <span id="estat-monthly-f">0</span></div></div>
+                    </div>
+                    <div class="bg-orange-500 text-white p-4 rounded-xl shadow-lg flex justify-between items-center">
+                        <div><p class="text-xs text-orange-200 mb-1">ทีมรับเหมา</p><h3 class="text-2xl font-bold" id="estat-contractor">0</h3></div>
+                        <div class="text-right text-xs text-orange-100"><div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-200"></span> ชาย: <span id="estat-contractor-m">0</span></div><div class="flex items-center gap-1 mt-1"><span class="w-2 h-2 rounded-full bg-pink-200"></span> หญิง: <span id="estat-contractor-f">0</span></div></div>
+                    </div>
+                 </div>
+                 <div class="flex flex-col md:flex-row justify-between items-end md:items-center mb-4 gap-4">
+                     <div class="flex bg-white rounded-xl p-1 shadow-sm border border-slate-200">
+                         <div class="tab-btn active" onclick="filterEmpTable('All', this)">ทั้งหมด</div>
+                         <div class="tab-btn" onclick="filterEmpTable('Monthly', this)">พนักงานประจำ</div>
+                         <div class="tab-btn" onclick="filterEmpTable('Contractor', this)">พนักงานรับเหมา</div>
+                     </div>
+                     <button onclick="openAddEmpModal()" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl shadow-lg font-bold flex items-center justify-center transition"><i class="fa-solid fa-user-plus mr-2"></i> เพิ่มพนักงาน</button>
+                 </div>
+                 <div class="card p-0 overflow-hidden">
+                     <div class="overflow-x-auto">
+                         <table class="w-full text-sm text-left"><thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-xs"><tr><th class="p-4 whitespace-nowrap">เลขบัตรประชาชน</th><th class="p-4 whitespace-nowrap">ชื่อ-สกุล</th><th class="p-4 whitespace-nowrap">ประเภท</th><th class="p-4 whitespace-nowrap">ตำแหน่ง</th><th class="p-4 whitespace-nowrap text-right">เงินเดือน</th><th class="p-4 whitespace-nowrap text-center">สถานะ</th><th class="p-4 whitespace-nowrap text-center">จัดการ</th></tr></thead><tbody id="emp-list" class="divide-y divide-slate-100"></tbody></table>
+                     </div>
+                 </div>
+            </div>
+
+            <!-- PAYROLL -->
+            <div id="payroll" class="page">
+                <h2 class="text-2xl font-bold mb-6 text-slate-800">คำนวณเงินเดือน</h2>
+                <div class="card mb-6 bg-blue-50/50 border-blue-100">
+                    <div class="flex flex-wrap gap-4 items-end">
+                         <div class="flex-1 min-w-[120px]">
+                             <label class="text-xs font-bold text-blue-800 mb-1 block">เดือน</label>
+                             <select id="pay-month" class="form-control border-blue-200 cursor-pointer" onchange="selectPayrollEmp()"></select>
+                         </div>
+                         <div class="w-24">
+                             <label class="text-xs font-bold text-blue-800 mb-1 block">ปี</label>
+                             <select id="pay-year" class="form-control border-blue-200 cursor-pointer" onchange="selectPayrollEmp()"></select>
+                         </div>
+                         <div class="w-32">
+                             <label class="text-xs font-bold text-blue-800 mb-1 block">งวด</label>
+                             <select id="pay-period" class="form-control bg-blue-600 text-white border-blue-600 font-bold cursor-pointer" onchange="selectPayrollEmp()"></select>
+                         </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                    <div class="xl:col-span-8 space-y-6">
+                        <div class="card">
+                             <h3 class="font-bold border-b pb-3 mb-5 text-slate-700">1. เลือกพนักงาน</h3>
+                             <select id="inp-p-employee" class="form-control text-lg h-12" onchange="selectPayrollEmp()"></select>
+                             <div id="p-pos-display" class="text-sm font-medium text-blue-600 mt-2 h-5 pl-1"></div>
+                        </div>
+                        <div class="card border-l-4 border-l-green-500">
+                            <h3 class="font-bold text-green-700 mb-4">2. รายได้ (Income)</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div><label class="text-xs font-bold text-slate-400 mb-1 block">เงินเดือน (งวดนี้)</label><input id="inp-p-salary" type="text" class="form-control font-bold text-slate-700" readonly></div>
+                                <div><label class="text-xs font-bold text-slate-400 mb-1 block">ค่าตอบแทน (OT/ค่าเที่ยว)</label><input id="inp-p-incentive" type="number" class="form-control font-bold text-green-600" readonly></div>
+                                <div><label class="text-xs font-bold text-slate-400 mb-1 block">อื่นๆ (ใส่เพิ่ม)</label><input id="inp-p-other" type="number" class="form-control text-green-600" oninput="calcPayroll()"></div>
+                            </div>
+                        </div>
+                        <div class="card border-l-4 border-l-red-500">
+                            <h3 class="font-bold text-red-700 mb-4">3. รายการหัก (Deduction)</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                <div><label class="text-xs font-bold text-slate-400 mb-1 block">ประกันสังคม</label><input id="inp-p-sso" type="number" class="form-control text-red-600 font-medium" readonly></div>
+                                <div><label class="text-xs font-bold text-slate-400 mb-1 block">ภาษี</label><input id="inp-p-tax" type="number" class="form-control text-red-600" oninput="calcPayroll()"></div>
+                                <div><label class="text-xs font-bold text-slate-400 mb-1 block">เบิกล่วงหน้า</label><input id="inp-p-advance" type="number" class="form-control text-red-600 font-medium" readonly></div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-4">
+                                <div><label class="text-xs font-bold text-red-600 mb-1 block">ค่าน้ำ (บาท)</label><input id="inp-p-water" type="number" class="form-control text-red-600 border-red-200 bg-red-50/50" oninput="calcPayroll()" placeholder="0"></div>
+                                <div><label class="text-xs font-bold text-red-600 mb-1 block">ค่าไฟ (บาท)</label><input id="inp-p-electricity" type="number" class="form-control text-red-600 border-red-200 bg-red-50/50" oninput="calcPayroll()" placeholder="0"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="xl:col-span-4">
+                        <div class="sticky top-4 bg-slate-900 text-white rounded-2xl p-6 shadow-2xl">
+                             <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-6">สรุปจ่าย (SLIP PREVIEW)</h3>
+                             <div class="flex justify-between mb-2"><span class="text-slate-300">รวมรับ</span><span class="text-green-400 font-bold" id="disp-p-income">0.00</span></div>
+                             <div class="flex justify-between mb-6 pb-4 border-b border-slate-700"><span class="text-slate-300">รวมหัก</span><span class="text-red-400 font-bold" id="disp-p-deduct">0.00</span></div>
+                             <div class="text-right mb-8"><span class="text-xs text-slate-400 block mb-1">ยอดสุทธิ (Net Pay)</span><span class="text-4xl font-bold" id="disp-p-net">0.00</span></div>
+                             <button onclick="savePayroll()" id="btn-save-payroll" class="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-xl font-bold shadow-lg transition disabled:opacity-50 text-lg" disabled>ยืนยันรายการ</button>
+                             <button onclick="resetPayrollForm()" class="w-full mt-3 bg-slate-800 text-slate-400 py-2 rounded-xl text-sm">ยกเลิก</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-8 card p-0 overflow-hidden">
+                    <div class="p-4 border-b bg-slate-50 flex flex-wrap justify-between items-center gap-3"><h3 class="font-bold text-slate-700">รายการที่รอบันทึก</h3><button onclick="savePayrollBatchToDB()" class="bg-slate-800 text-white px-4 py-2 rounded-lg font-bold shadow text-sm hover:bg-slate-700 transition"><i class="fa-solid fa-cloud-arrow-up mr-2"></i> บันทึกเข้าระบบทั้งหมด</button></div>
+                    <div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead class="bg-white border-b text-slate-500 font-semibold"><tr><th class="p-4">พนักงาน</th><th class="p-4 text-right">เงินเดือน</th><th class="p-4 text-right">เพิ่ม</th><th class="p-4 text-right">หัก</th><th class="p-4 text-right text-slate-800">สุทธิ</th><th class="p-4 text-center">จัดการ</th></tr></thead><tbody id="table-payroll-recorded" class="divide-y divide-slate-100"></tbody></table></div>
+                </div>
+            </div>
+
+            <!-- CONTRACTOR -->
+            <div id="contractor" class="page">
+                <h2 class="text-2xl font-bold mb-6 text-slate-800">งานรับเหมา / จ้างทำของ</h2>
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+                    <div class="card border-l-4 border-l-blue-500 flex justify-between"><div><p class="text-sm text-slate-500">จำนวนงานเดือนนี้</p><h3 class="text-2xl font-bold" id="con-stat-count">0</h3></div><i class="fa-solid fa-briefcase text-blue-100 text-4xl"></i></div>
+                    <div class="card border-l-4 border-l-orange-500 flex justify-between"><div><p class="text-sm text-slate-500">ยอดจ่ายรวม</p><h3 class="text-2xl font-bold text-orange-600" id="con-stat-total">0</h3></div><i class="fa-solid fa-wallet text-orange-100 text-4xl"></i></div>
+                    <div class="card border-l-4 border-l-red-500 flex justify-between"><div><p class="text-sm text-slate-500">ภาษีหัก ณ ที่จ่าย</p><h3 class="text-2xl font-bold text-red-600" id="con-stat-tax">0</h3></div><i class="fa-solid fa-file-invoice text-red-100 text-4xl"></i></div>
+                </div>
+
+                <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+                    <!-- Form -->
+                    <div class="xl:col-span-4 space-y-4">
+                        <div class="card bg-white shadow-lg border-t-4 border-slate-700">
+                            <h3 class="font-bold text-slate-800 mb-4 flex items-center"><i class="fa-solid fa-pen-to-square mr-2"></i> บันทึกงานใหม่</h3>
+                            <input type="hidden" id="c-id">
+                            <div class="space-y-4">
+                                <div><label class="text-xs font-bold text-slate-500 mb-1 block">วันที่ทำรายการ</label><input type="date" id="c-date" class="form-control"></div>
+                                <div><label class="text-xs font-bold text-slate-500 mb-1 block">เลือกผู้รับเหมา</label><select id="c-emp" class="form-control cursor-pointer"></select></div>
+                                <div><label class="text-xs font-bold text-slate-500 mb-1 block">ชื่องานที่จ้าง</label><input type="text" id="c-job" class="form-control" placeholder="เช่น เดินสายไฟ, ทาสี"></div>
+                                <div><label class="text-xs font-bold text-slate-500 mb-1 block">จำนวนเงินค่าจ้าง</label><input type="number" id="c-amount" class="form-control text-lg font-bold text-slate-700" placeholder="0.00" oninput="calcWHT()"></div>
+                                
+                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                    <label class="text-xs font-bold text-slate-500 mb-2 block">ภาษีหัก ณ ที่จ่าย (WHT)</label>
+                                    <div class="flex gap-4">
+                                        <label class="flex items-center cursor-pointer"><input type="radio" name="c-wht" value="0" checked onchange="calcWHT()" class="mr-2 text-blue-600">ไม่หัก</label>
+                                        <label class="flex items-center cursor-pointer"><input type="radio" name="c-wht" value="1" onchange="calcWHT()" class="mr-2 text-blue-600">1% (ขนส่ง)</label>
+                                        <label class="flex items-center cursor-pointer"><input type="radio" name="c-wht" value="3" onchange="calcWHT()" class="mr-2 text-blue-600">3% (บริการ)</label>
+                                    </div>
+                                    <div class="flex justify-between mt-3 text-sm border-t pt-2"><span>หักภาษี:</span><span id="c-tax-disp" class="text-red-500 font-bold">0.00</span></div>
+                                    <div class="flex justify-between text-sm mt-1"><span>ยอดจ่ายสุทธิ:</span><span id="c-net-disp" class="text-green-600 font-bold text-lg">0.00</span></div>
+                                </div>
+
+                                <div><label class="text-xs font-bold text-slate-500 mb-1 block">วันที่จ่ายเงิน</label><input type="date" id="c-pay-date" class="form-control"></div>
+                                <div class="flex gap-2 pt-2">
+                                    <button onclick="resetContractorForm()" class="flex-1 bg-slate-100 text-slate-600 py-3 rounded-xl font-bold">ล้างค่า</button>
+                                    <button onclick="saveContractorJob()" class="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold shadow hover:bg-slate-700">บันทึก</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- List -->
+                    <div class="xl:col-span-8">
+                        <div class="card p-0 overflow-hidden">
+                            <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
+                                <h3 class="font-bold text-slate-700">รายการงานเดือนนี้</h3>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="changeContractorMonth(-1)" class="w-8 h-8 rounded-full hover:bg-slate-200 flex items-center justify-center text-slate-600"><i class="fa-solid fa-chevron-left"></i></button>
+                                    <span class="text-sm font-bold text-slate-600" id="c-list-month"></span>
+                                    <button onclick="changeContractorMonth(1)" class="w-8 h-8 rounded-full hover:bg-slate-200 flex items-center justify-center text-slate-600"><i class="fa-solid fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-left"><thead class="bg-white border-b text-slate-500 font-semibold"><tr><th class="p-4">วันที่</th><th class="p-4">ผู้รับเหมา/งาน</th><th class="p-4 text-right">ค่าจ้าง</th><th class="p-4 text-right">ภาษี</th><th class="p-4 text-right">สุทธิ</th><th class="p-4 text-center">จัดการ</th></tr></thead><tbody id="c-list" class="divide-y divide-slate-100"></tbody></table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LEDGER -->
+            <div id="ledger" class="page">
+                <div class="flex justify-between items-start mb-6">
+                    <h2 class="text-2xl font-bold text-slate-800">รายรับ-รายจ่าย</h2>
+                    <div class="bg-white px-4 py-2 rounded-xl shadow-sm border text-right">
+                        <p class="text-xs text-slate-400">ยอดคงเหลือ (Balance)</p>
+                        <h3 class="text-2xl font-bold text-blue-600" id="ldg-balance">0.00</h3>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+                    <div class="xl:col-span-4 space-y-4">
+                        <div class="card border-t-4 border-blue-500">
+                             <h3 class="font-bold text-slate-800 mb-4">ลงบัญชี</h3>
+                             <input type="hidden" id="l-id">
+                             <div class="space-y-4">
+                                 <div><label class="text-xs font-bold text-slate-500 mb-1 block">วันที่</label><input type="date" id="l-date" class="form-control"></div>
+                                 <div><label class="text-xs font-bold text-slate-500 mb-1 block">รายการ</label><input type="text" id="l-desc" class="form-control" placeholder="เช่น รับเงินค่างาน..."></div>
+                                 <div><label class="text-xs font-bold text-slate-500 mb-1 block">หมวดหมู่</label><select id="l-cat" class="form-control cursor-pointer"></select></div>
+                                 <div class="grid grid-cols-2 gap-4">
+                                     <div><label class="text-xs font-bold text-green-600 mb-1 block">รายรับ</label><input type="number" id="l-income" class="form-control text-green-600 font-bold" placeholder="0"></div>
+                                     <div><label class="text-xs font-bold text-red-500 mb-1 block">รายจ่าย</label><input type="number" id="l-expense" class="form-control text-red-500 font-bold" placeholder="0"></div>
+                                 </div>
+                                 <div class="flex gap-2 pt-2">
+                                     <button onclick="resetLedgerForm()" class="flex-1 bg-slate-100 text-slate-600 py-3 rounded-xl font-bold">รีเซ็ต</button>
+                                     <button onclick="saveLedger()" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold shadow hover:bg-blue-700">บันทึก</button>
+                                 </div>
+                             </div>
+                        </div>
+                    </div>
+                    <div class="xl:col-span-8">
+                        <div class="card p-0 overflow-hidden">
+                            <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
+                                <h3 class="font-bold text-slate-700">รายการล่าสุด</h3>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="changeLedgerMonth(-1)" class="w-8 h-8 rounded-full hover:bg-slate-200 flex items-center justify-center text-slate-600"><i class="fa-solid fa-chevron-left"></i></button>
+                                    <div class="flex gap-2"><div class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">รับ: <span id="ldg-sum-inc">0</span></div><div class="text-xs px-2 py-1 bg-red-100 text-red-700 rounded">จ่าย: <span id="ldg-sum-exp">0</span></div></div>
+                                    <button onclick="changeLedgerMonth(1)" class="w-8 h-8 rounded-full hover:bg-slate-200 flex items-center justify-center text-slate-600"><i class="fa-solid fa-chevron-right"></i></button>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
+                                <table class="w-full text-sm text-left"><thead class="bg-white border-b text-slate-500 font-semibold sticky top-0"><tr><th class="p-4">วันที่</th><th class="p-4">รายการ</th><th class="p-4">หมวดหมู่</th><th class="p-4 text-right text-green-600">รายรับ</th><th class="p-4 text-right text-red-500">รายจ่าย</th><th class="p-4 text-center">จัดการ</th></tr></thead><tbody id="l-list" class="divide-y divide-slate-100"></tbody></table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REPORTS -->
+            <div id="reports" class="page">
+                <h2 class="text-2xl font-bold mb-6 text-slate-800">รายงานสรุป</h2>
+                
+                <!-- Tab Headers -->
+                <div class="flex bg-white rounded-xl p-1 shadow-sm border border-slate-200 mb-6 max-w-3xl overflow-x-auto">
+                     <div class="tab-btn active flex-1 text-center whitespace-nowrap" onclick="switchReportTab('payroll', this)">เงินเดือนพนักงาน</div>
+                     <div class="tab-btn flex-1 text-center whitespace-nowrap" onclick="switchReportTab('contractor', this)">งานรับเหมา</div>
+                     <div class="tab-btn flex-1 text-center whitespace-nowrap" onclick="switchReportTab('ledger', this)">รายรับ-รายจ่าย</div>
+                     <div class="tab-btn flex-1 text-center whitespace-nowrap" onclick="switchReportTab('trip', this)">สรุปเที่ยววิ่ง</div>
+                </div>
+
+                <!-- 1. Payroll Report -->
+                <div id="rpt-tab-payroll" class="rpt-tab-content">
+                    <div class="card mb-6 p-4">
+                        <div class="flex flex-wrap gap-4 items-end">
+                            <div class="flex-1 min-w-[120px]"><label class="text-xs font-bold text-slate-500 mb-1 block">รูปแบบ</label><select id="rpt-period" class="form-control"><option value="all">รวมทั้งเดือน</option><option value="1">แยกรายงวด 1</option><option value="2">แยกรายงวด 2</option></select></div>
+                            <div class="flex-1 min-w-[140px]"><label class="text-xs font-bold text-slate-500 mb-1 block">เดือน</label><select id="rpt-month" class="form-control"></select></div>
+                            <div class="w-24"><label class="text-xs font-bold text-slate-500 mb-1 block">ปี</label><select id="rpt-year" class="form-control"></select></div>
+                            <button onclick="filterReport()" class="bg-blue-600 text-white px-6 h-12 rounded-xl font-bold shadow hover:bg-blue-700 transition w-full md:w-auto"><i class="fa-solid fa-search mr-2"></i> ค้นหา</button>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-slate-100 flex flex-wrap gap-3" id="export-buttons-area" style="display: none;">
+                            <button onclick="exportToExcel()" class="bg-[#4ade80] hover:bg-[#22c55e] text-white px-5 py-2 rounded-xl font-bold shadow-sm transition flex items-center text-sm"><i class="fa-solid fa-file-excel mr-2"></i> Excel</button>
+                            <button onclick="exportToPDF()" class="bg-[#f87171] hover:bg-[#ef4444] text-white px-5 py-2 rounded-xl font-bold shadow-sm transition flex items-center text-sm"><i class="fa-solid fa-file-pdf mr-2"></i> Report PDF</button>
+                            <button onclick="printAllSlips()" class="bg-[#fb923c] hover:bg-[#f97316] text-white px-5 py-2 rounded-xl font-bold shadow-sm transition flex items-center text-sm"><i class="fa-solid fa-print mr-2"></i> Slips PDF</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto" id="report-table-container">
+                        <table class="report-print-table">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2">งวด</th>
+                                    <th rowspan="2">เดือน</th>
+                                    <th rowspan="2">ปี</th>
+                                    <th colspan="3">ข้อมูลพนักงาน</th>
+                                    <th colspan="4" style="background-color: #f0fdf4;">รายรับ</th>
+                                    <th colspan="6" style="background-color: #fef2f2;">รายหัก</th>
+                                    <th rowspan="2">สุทธิ</th>
+                                </tr>
+                                <tr>
+                                    <th>รหัส</th>
+                                    <th>ชื่อ-สกุล</th>
+                                    <th>ตำแหน่ง</th>
+                                    <th style="background-color: #f0fdf4;">เงินเดือน</th>
+                                    <th style="background-color: #f0fdf4;">ค่าตอบแทน</th>
+                                    <th style="background-color: #f0fdf4;">อื่นๆ</th>
+                                    <th style="background-color: #dcfce7; font-weight: bold;">รวมรับ</th>
+                                    <th style="background-color: #fef2f2;">สปส.</th>
+                                    <th style="background-color: #fef2f2;">ภาษี</th>
+                                    <th style="background-color: #fef2f2;">เบิก</th>
+                                    <th style="background-color: #fef2f2;">น้ำ</th>
+                                    <th style="background-color: #fef2f2;">ไฟ</th>
+                                    <th style="background-color: #fee2e2; font-weight: bold;">รวมหัก</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rpt-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 2. Contractor Report -->
+                <div id="rpt-tab-contractor" class="rpt-tab-content hidden">
+                    <div class="card mb-6 p-4">
+                        <div class="flex gap-4 items-end">
+                            <div class="flex-1"><label class="text-xs font-bold text-slate-500 mb-1 block">เดือน</label><select id="rpt-c-month" class="form-control"></select></div>
+                            <div class="w-32"><label class="text-xs font-bold text-slate-500 mb-1 block">ปี</label><select id="rpt-c-year" class="form-control"></select></div>
+                            <button onclick="filterContractorReport()" class="bg-orange-600 text-white px-6 h-12 rounded-xl font-bold shadow hover:bg-orange-700 transition"><i class="fa-solid fa-search mr-2"></i> ค้นหา</button>
+                        </div>
+                    </div>
+                    <div class="card p-0 overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-slate-50 border-b text-slate-500 font-semibold"><tr><th class="p-4">วันที่</th><th class="p-4">ผู้รับเหมา/งาน</th><th class="p-4 text-right">ค่าจ้าง</th><th class="p-4 text-right">ภาษี</th><th class="p-4 text-right">สุทธิ</th><th class="p-4 text-center">พิมพ์</th></tr></thead><tbody id="rpt-c-list" class="divide-y divide-slate-100"></tbody></table></div>
+                </div>
+
+                <!-- 3. Ledger Report -->
+                <div id="rpt-tab-ledger" class="rpt-tab-content hidden">
+                    <div class="card mb-6 p-4">
+                        <div class="flex gap-4 items-end">
+                            <div class="flex-1"><label class="text-xs font-bold text-slate-500 mb-1 block">เดือน (เลือก 'ทั้งปี' ได้)</label><select id="rpt-l-month" class="form-control"><option value="all">-- ทั้งปี --</option></select></div>
+                            <div class="w-32"><label class="text-xs font-bold text-slate-500 mb-1 block">ปี</label><select id="rpt-l-year" class="form-control"></select></div>
+                            <button onclick="filterLedgerReport()" class="bg-blue-600 text-white px-6 h-12 rounded-xl font-bold shadow hover:bg-blue-700 transition"><i class="fa-solid fa-search mr-2"></i> ค้นหา</button>
+                        </div>
+                         <div class="mt-4 pt-4 border-t border-slate-100">
+                             <button onclick="printLedgerReport()" id="btn-print-ledger" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hidden"><i class="fa-solid fa-print mr-2"></i> พิมพ์สรุปบัญชี</button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4 mb-6 hidden" id="rpt-l-summary">
+                        <div class="bg-green-100 text-green-800 p-4 rounded-xl text-center"><p class="text-xs mb-1">รายรับรวม</p><h3 class="text-xl font-bold" id="rs-inc">0</h3></div>
+                        <div class="bg-red-100 text-red-800 p-4 rounded-xl text-center"><p class="text-xs mb-1">รายจ่ายรวม</p><h3 class="text-xl font-bold" id="rs-exp">0</h3></div>
+                        <div class="bg-white border text-slate-800 p-4 rounded-xl text-center"><p class="text-xs mb-1">ยอดคงเหลือ (Balance)</p><h3 class="text-xl font-bold" id="rs-net">0</h3></div>
+                    </div>
+                    <div class="card p-0 overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-slate-50 border-b text-slate-500 font-semibold"><tr><th class="p-4">วันที่</th><th class="p-4">รายการ</th><th class="p-4">หมวดหมู่</th><th class="p-4 text-right">รับ</th><th class="p-4 text-right">จ่าย</th></tr></thead><tbody id="rpt-l-list" class="divide-y divide-slate-100"></tbody></table></div>
+                </div>
+
+                <!-- 4. Trip Report -->
+                <div id="rpt-tab-trip" class="rpt-tab-content hidden">
+                     <div class="card mb-6 p-4">
+                        <div class="flex flex-wrap gap-4 items-end">
+                            <div class="w-32"><label class="text-xs font-bold text-slate-500 mb-1 block">เดือน</label><select id="rpt-t-month" class="form-control"></select></div>
+                            <div class="w-24"><label class="text-xs font-bold text-slate-500 mb-1 block">ปี</label><select id="rpt-t-year" class="form-control"></select></div>
+                            <div class="w-40"><label class="text-xs font-bold text-slate-500 mb-1 block">งวด</label><select id="rpt-t-period" class="form-control"><option value="1">1 (วันที่ 1-15)</option><option value="2">2 (วันที่ 16-สิ้นเดือน)</option></select></div>
+                            <div class="flex-1"><label class="text-xs font-bold text-slate-500 mb-1 block">ประเภท</label>
+                                <div class="flex gap-2 p-1 bg-slate-100 rounded-lg">
+                                    <label class="flex-1 text-center cursor-pointer"><input type="radio" name="rpt-t-type" value="All" checked class="peer hidden"><div class="py-2 rounded-md text-sm font-medium text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition">ทั้งหมด</div></label>
+                                    <label class="flex-1 text-center cursor-pointer"><input type="radio" name="rpt-t-type" value="Macro" class="peer hidden"><div class="py-2 rounded-md text-sm font-medium text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition">แม็คโคร</div></label>
+                                    <label class="flex-1 text-center cursor-pointer"><input type="radio" name="rpt-t-type" value="Truck" class="peer hidden"><div class="py-2 rounded-md text-sm font-medium text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition">สิบล้อ</div></label>
+                                </div>
+                            </div>
+                            <button onclick="filterTripReport()" class="bg-purple-600 text-white px-6 h-12 rounded-xl font-bold shadow hover:bg-purple-700 transition"><i class="fa-solid fa-search mr-2"></i> ค้นหา</button>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-slate-100 hidden" id="trip-export-area">
+                             <button onclick="printTripReport()" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold shadow"><i class="fa-solid fa-print mr-2"></i> พิมพ์ใบสรุปเที่ยว (PDF)</button>
+                        </div>
+                    </div>
+                    <div class="card p-0 overflow-x-auto">
+                        <div id="trip-report-container" class="min-w-full"></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- SETTINGS -->
+            <div id="settings" class="page">
+                <h2 class="text-2xl font-bold mb-6 text-slate-800">ตั้งค่าระบบ</h2>
+                <form id="settingsForm" onsubmit="saveSettings(event)" class="max-w-3xl space-y-6">
+                    <div class="card">
+                        <h3 class="font-bold border-b pb-3 mb-4 text-blue-600"><i class="fa-solid fa-building mr-2"></i> ข้อมูลองค์กร</h3>
+                        <div class="space-y-4">
+                            <div><label class="block text-sm font-bold mb-1 text-slate-700">ชื่อบริษัท</label><input name="company_name" id="set-company" class="form-control"></div>
+                            <div><label class="block text-sm font-bold mb-1 text-slate-700">เลขประจำตัวผู้เสียภาษี</label><input name="tax_id" id="set-tax" class="form-control" placeholder="เช่น 01055xxxxxxxx"></div>
+                            <div><label class="block text-sm font-bold mb-1 text-slate-700">ที่อยู่</label><textarea name="company_address" id="set-address" class="form-control" rows="3"></textarea></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                         <h3 class="font-bold border-b pb-3 mb-4 text-purple-600"><i class="fa-solid fa-list mr-2"></i> หมวดหมู่บัญชี</h3>
+                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                             <div><label class="block text-sm font-bold mb-1 text-slate-700">หมวดรายรับ (คั่นด้วยจุลภาค ,)</label><textarea name="acc_income_cats" id="set-inc-cat" class="form-control" rows="3"></textarea></div>
+                             <div><label class="block text-sm font-bold mb-1 text-slate-700">หมวดรายจ่าย (คั่นด้วยจุลภาค ,)</label><textarea name="acc_expense_cats" id="set-exp-cat" class="form-control" rows="3"></textarea></div>
+                         </div>
+                    </div>
+                    <div class="card"><h3 class="font-bold border-b pb-3 mb-4 text-green-600"><i class="fa-solid fa-calculator mr-2"></i> การคำนวณเงินเดือน</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="col-span-1 md:col-span-2"><label class="block text-sm font-bold mb-1 text-slate-700">หมวดรายได้อื่นๆ ของพนักงาน (คั่นด้วยจุลภาค ,)</label><input name="income_categories" id="set-emp-inc-cat" class="form-control" placeholder="เช่น ค่าเบี้ยเลี้ยง, ค่าโทรศัพท์"></div><div><label class="block text-sm font-bold mb-1 text-slate-700">จำนวนเที่ยวเหมาจ่าย</label><input name="trip_threshold" id="set-trip" type="number" class="form-control"></div><div><label class="block text-sm font-bold mb-1 text-slate-700">ประกันสังคม (%)</label><input name="sso_rate" id="set-sso" type="number" step="0.01" class="form-control"></div><div><label class="block text-sm font-bold mb-1 text-slate-700">เพดานประกันสังคม</label><input name="sso_max" id="set-sso-max" type="number" class="form-control"></div></div></div>
+                    <button type="submit" class="bg-slate-800 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-slate-700 transition w-full md:w-auto">บันทึกการตั้งค่า</button>
+                </form>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Modals -->
+    <div id="empModal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-[60] p-4 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+            <h3 class="text-xl font-bold mb-6 text-slate-800 border-b pb-3">จัดการข้อมูลพนักงาน</h3>
+            <form onsubmit="handleEmpSubmit(event)" class="space-y-4">
+                <input type="hidden" id="e-edit-mode" value="false">
+                <div class="bg-slate-100 p-3 rounded-xl mb-4">
+                    <label class="text-xs font-bold text-slate-600 mb-2 block">ประเภทพนักงาน</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center cursor-pointer"><input type="radio" name="e-type" value="Monthly" checked class="mr-2">พนักงานประจำ</label>
+                        <label class="flex items-center cursor-pointer"><input type="radio" name="e-type" value="Contractor" class="mr-2">พนักงานรับเหมา</label>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="text-xs font-bold text-slate-500 mb-1 block">เลขบัตรประชาชน</label><input id="e-id" class="form-control" required></div>
+                    <div><label class="text-xs font-bold text-slate-500 mb-1 block">เริ่มงาน</label><input type="date" id="e-start" class="form-control"></div>
+                </div>
+                <div class="grid grid-cols-12 gap-4">
+                    <div class="col-span-4"><label class="text-xs font-bold text-slate-500 mb-1 block">คำนำหน้า</label><select id="e-prefix" class="form-control"><option>นาย</option><option>นาง</option><option>น.ส.</option></select></div>
+                    <div class="col-span-8"><label class="text-xs font-bold text-slate-500 mb-1 block">ชื่อ-สกุล</label><div class="flex gap-2"><input id="e-fname" class="form-control" placeholder="ชื่อ"><input id="e-lname" class="form-control" placeholder="สกุล"></div></div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="text-xs font-bold text-slate-500 mb-1 block">ตำแหน่ง</label><input id="e-pos" class="form-control"></div>
+                    <div><label class="text-xs font-bold text-slate-500 mb-1 block">สถานะ</label><select id="e-status" class="form-control" onchange="toggleResignInput()"><option value="Active">ปกติ</option><option value="Resigned">ลาออก</option></select></div>
+                </div>
+                <div><label class="text-xs font-bold text-slate-500 mb-1 block">ที่อยู่ (Address)</label><textarea id="e-address" class="form-control h-20" placeholder="บ้านเลขที่, ถนน, ตำบล..."></textarea></div>
+                <div id="div-resign-date" class="hidden bg-red-50 p-3 rounded-xl border border-red-100"><label class="text-xs font-bold text-red-600 mb-1 block">วันที่ลาออก</label><input type="date" id="e-resign" class="form-control border-red-200 text-red-600 font-medium"></div>
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 grid grid-cols-2 gap-4">
+                    <div><label class="text-xs font-bold text-slate-500 mb-1 block">เงินเดือนฐาน</label><input type="number" id="e-salary" class="form-control font-bold text-slate-700"></div>
+                    <div><label class="text-xs font-bold text-slate-500 mb-1 block">เลขบัญชี</label><input id="e-bank" class="form-control"></div>
+                </div>
+                <div class="flex justify-end gap-3 pt-4"><button type="button" onclick="document.getElementById('empModal').classList.add('hidden')" class="px-5 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-medium hover:bg-slate-200 transition">ยกเลิก</button><button type="submit" class="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-lg">บันทึก</button></div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="payslipModal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl relative"><div class="bg-slate-800 p-4 flex justify-between items-center text-white"><h3 class="font-bold text-lg"><i class="fa-solid fa-file-invoice mr-2"></i> เอกสาร</h3><button onclick="document.getElementById('payslipModal').classList.add('hidden')" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition"><i class="fa-solid fa-times"></i></button></div><div class="p-0 bg-slate-100 overflow-y-auto max-h-[75vh]" id="payslip-modal-body"><div id="payslip-content" class="w-full"></div></div><div class="p-4 bg-slate-50 flex justify-end border-t"><button onclick="printSingleSlip()" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold shadow hover:bg-blue-700 transition flex items-center"><i class="fa-solid fa-print mr-2"></i> พิมพ์ / ดาวน์โหลด</button></div></div>
+    </div>
+
+    <!-- Hidden containers for old code compatibility (some might still be referenced by old logic logic, keeping them empty) -->
+    <div id="print-all-container" style="display: none;"></div>
+    <div id="pdf-report-container" style="display: none;"></div>
+    <div id="trip-print-container" style="display: none;"></div>
+
+    <script type="module">
+        // Import the new PDF Service
+        import PDFService from './src/services/PDFService.js';
+
+        // Make functions available globally for HTML onclick attributes
+        window.printTripReport = () => {
+            const m = parseInt(document.getElementById('rpt-t-month').value);
+            const y = parseInt(document.getElementById('rpt-t-year').value);
+            const p = parseInt(document.getElementById('rpt-t-period').value);
+            const type = document.querySelector('input[name="rpt-t-type"]:checked').value;
+            
+            const monthNames = ["", "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+            const monthLabel = `${monthNames[m]} ${y}`;
+
+            // Re-calculate the data specifically for the PDF generator (mirroring the logic in filterTripReport)
+            let startDate = 1, endDate = 15;
+            let lastDayOfMonth = new Date(y, m, 0).getDate();
+            if (p === 2) { startDate = 16; endDate = lastDayOfMonth; }
+
+            let emps = appState.employees.filter(e => e.status !== 'Resigned');
+            if (type === 'All') {
+                emps = emps.filter(e => e.pos && (e.pos.includes('แม็คโคร') || e.pos.includes('Macro') || e.pos.includes('สิบล้อ') || e.pos.includes('Truck')));
+            } else if (type === 'Macro') {
+                emps = emps.filter(e => e.pos && (e.pos.includes('แม็คโคร') || e.pos.includes('Macro')));
+            } else if (type === 'Truck') {
+                emps = emps.filter(e => e.pos && (e.pos.includes('สิบล้อ') || e.pos.includes('Truck')));
+            }
+
+            // Prepare Table Body for PDF
+            let pdfData = [];
+            emps.forEach(emp => {
+                let row = [`${emp.prefix}${emp.fname} ${emp.lname}`];
+                let empTotal = 0;
+                
+                // Days 1-15 columns (or whatever range)
+                // Note: The PDF Service expects columns 1-15 fixed. 
+                // We need to map the specific days of this period to those columns.
+                
+                let dayColIndex = 0;
+                for(let d = startDate; d <= endDate; d++) {
+                    const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    const rec = appState.dailyRecords.find(r => r.emp_id == emp.id && r.date === dateStr);
+                    
+                    if(rec && rec.trip_count > 0) {
+                        row.push(rec.trip_count.toString());
+                        empTotal += rec.trip_count;
+                    } else {
+                        row.push("หยุด");
+                    }
+                    dayColIndex++;
+                }
+
+                // Fill remaining columns if month has fewer days than table slots (standard 15 slots)
+                while(row.length < 16) {
+                    row.push("-");
+                }
+
+                row.push(empTotal.toString());
+                pdfData.push(row);
+            });
+
+            // Call Service
+            PDFService.generateTripReport(pdfData, type.toUpperCase(), monthLabel);
+        };
+
+        window.printAllSlips = () => {
+             if(filteredReportData.length === 0) return Swal.fire('ไม่มีข้อมูล', 'กรุณากดค้นหาก่อน', 'warning');
+             // Convert raw data to PDF Service format
+             const dataForPdf = filteredReportData.map(d => ({
+                 name: d.name,
+                 pos: d.pos,
+                 period: d.period + "",
+                 month: d.month,
+                 year: d.year,
+                 salary: d.salary,
+                 incentive: d.incentive,
+                 other: d.other,
+                 sso: d.sso,
+                 tax: d.tax,
+                 advance: d.advance,
+                 water: d.water,
+                 electricity: d.electricity,
+                 net: d.net,
+                 totalDeduction: d.sso + d.tax + d.advance + d.water + d.electricity
+             }));
+             PDFService.generatePayslip(dataForPdf);
+        };
+
+        window.printSingleSlip = () => {
+             // Retrieve data from current view or modal context. 
+             // Since generateSlipHTML renders to DOM, we need the raw data object.
+             // We can assume the last rendered slip is what we want, but we need the data object.
+             // Let's modify generateSlipHTML to store current slip data globally.
+             if(window.currentSlipData) {
+                 // Wrap in array because generatePayslip expects an array
+                 const data = { ...window.currentSlipData };
+                 data.period = data.period + ""; 
+                 data.totalDeduction = data.sso + data.tax + data.advance + data.water + data.electricity;
+                 PDFService.generatePayslip([data]);
+             } else {
+                 // Fallback if not available
+                 const el = document.getElementById('payslip-content');
+                 alert("Error: Data not found for PDF generation.");
+             }
+        };
+
+        window.printPaymentVoucher = (projId) => {
+             const p = appState.projects.find(x => x.id == projId); 
+             if (!p) return;
+             const emp = appState.employees.find(e => e.id == p.emp_id) || { fname: '', lname: '', id: '' };
+             
+             // Combine data for Service
+             const receiptData = {
+                 id: p.id,
+                 date: p.date,
+                 empName: `${emp.prefix}${emp.fname} ${emp.lname}`,
+                 job_name: p.job_name,
+                 amount: p.amount,
+                 wht_rate: p.wht_rate,
+                 tax: p.tax,
+                 net: p.net
+             };
+             
+             PDFService.generateReceipt(receiptData);
+        };
+
+        window.printLedgerReport = () => {
+            if(!appState.ledgerSummary || !appState.filteredLedger) return;
+            PDFService.generateLedger(appState.ledgerSummary, appState.filteredLedger);
+        };
+
+        window.exportToPDF = () => {
+             const data = filteredReportData.map(d => [
+                 d.period,
+                 d.month,
+                 d.year,
+                 d.emp_id,
+                 d.name,
+                 d.pos,
+                 d.salary.toLocaleString(),
+                 d.incentive.toLocaleString(),
+                 d.other.toLocaleString(),
+                 (d.salary + d.incentive + d.other).toLocaleString(),
+                 (d.sso + d.tax + d.advance + d.water + d.electricity).toLocaleString(),
+                 d.net.toLocaleString()
+             ]);
+             PDFService.generateSalarySummary(data);
+        };
+
+        // Attach other functions that were inline but might be better here, 
+        // OR simply ensure the existing script below this module script can access PDFService via window globals if needed.
+        // But mainly we replaced the 'print' functions.
+
+        // ============================================================
+        // 1. CONFIGURATION & SUPABASE SETUP
+        // ============================================================
+        const SUPABASE_URL = 'https://qtbdosctphibsyimkyvt.supabase.co'; // ใส่ URL ของคุณ
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0YmRvc2N0cGhpYnN5aW1reXZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMzUyMDksImV4cCI6MjA4NjcxMTIwOX0.56bsWDqxR24s9kBSbVRT5ucdEjiS6eDd7ARXsqz2tUo'; // ใส่ Key ของคุณ
+        
+        let db;
+        try {
+            if(SUPABASE_URL === 'YOUR_SUPABASE_URL') {
+                console.warn('กรุณาใส่ Supabase URL และ Key');
+            } else {
+                db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            }
+        } catch(e) { console.error("Supabase Init Error", e); }
+
+        const TEAM_PIN = "8888"; // รหัสเข้าใช้งาน
+
+        // ============================================================
+        // 2. GLOBAL STATE
+        // ============================================================
+        window.appState = { 
+            employees: [], dailyRecords: [], settings: {}, 
+            history: [], payrollTemp: [], projects: [], ledger: [],
+            nav: { cMonth: null, cYear: null, lMonth: null, lYear: null }
+        };
+        let empChart = null, salaryChart = null;
+        window.filteredReportData = []; 
+        window.currentEmpFilter = 'All';
+        window.currentSlipData = null; // Store for PDF generation
+
+        // ============================================================
+        // 3. INITIALIZATION & LOGIN
+        // ============================================================
+        window.onload = function() {
+            if(localStorage.getItem('nok_team_login') === 'true') { 
+                document.getElementById('login-overlay').classList.add('hidden'); 
+                startApp(); 
+            }
+        };
+
+        window.checkPin = function() { 
+            const inp = document.getElementById('team-pin').value; 
+            if(inp === TEAM_PIN) { 
+                localStorage.setItem('nok_team_login', 'true'); 
+                document.getElementById('login-overlay').classList.add('hidden'); 
+                startApp(); 
+            } else { 
+                document.getElementById('login-error').classList.remove('hidden'); 
+                document.getElementById('team-pin').value = ''; 
+            } 
+        }
+
+        window.logout = function() { localStorage.removeItem('nok_team_login'); location.reload(); }
+
+        window.startApp = async function() {
+            document.getElementById('loading-overlay').classList.remove('hidden');
+            const d = new Date();
+            document.getElementById('dash-date-display').innerText = d.toLocaleDateString('th-TH', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+            document.getElementById('d-date').valueAsDate = d; 
+            document.getElementById('c-date').valueAsDate = d; 
+            document.getElementById('l-date').valueAsDate = d;
+            
+            // Set init nav states
+            appState.nav.cMonth = d.getMonth() + 1;
+            appState.nav.cYear = d.getFullYear();
+            appState.nav.lMonth = d.getMonth() + 1;
+            appState.nav.lYear = d.getFullYear();
+
+            await getInitialData();
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }
+
+        window.getInitialData = async function() {
+            try {
+                if(!db) throw new Error("Supabase not configured");
+                
+                const [emp, daily, pay, proj, ledg, set] = await Promise.all([
+                    db.from('employees').select('*'), 
+                    db.from('daily_records').select('*'), 
+                    db.from('payroll_history').select('*'),
+                    db.from('projects').select('*'), 
+                    db.from('ledger').select('*'), 
+                    db.from('settings').select('*')
+                ]);
+
+                appState.employees = emp.data || []; 
+                appState.dailyRecords = daily.data || [];
+                appState.history = pay.data || []; 
+                appState.projects = proj.data || [];
+                appState.ledger = ledg.data || [];
+                
+                appState.settings = {};
+                if(set.data) set.data.forEach(s => appState.settings[s.key] = s.value);
+
+                initSystemUI(); 
+            } catch (e) { 
+                console.error(e); 
+                Swal.fire('การเชื่อมต่อขัดข้อง', 'ไม่สามารถโหลดข้อมูลได้ กรุณาตรวจสอบการตั้งค่า Supabase', 'error');
+            }
+        }
+
+        window.initSystemUI = function() {
+            renderEmpTable('All'); 
+            renderDailyEmpSelect(); 
+            renderPayrollEmpSelect();
+            initDateDropdowns(); 
+            
+            // Populate Settings
+            const s = appState.settings;
+            if(s) {
+                document.getElementById('set-company').value = s.company_name || '';
+                document.getElementById('set-tax').value = s.tax_id || '';
+                document.getElementById('set-address').value = s.company_address || '';
+                document.getElementById('set-inc-cat').value = s.acc_income_cats || '';
+                document.getElementById('set-exp-cat').value = s.acc_expense_cats || '';
+                document.getElementById('set-emp-inc-cat').value = s.income_categories || '';
+                document.getElementById('set-trip').value = s.trip_threshold || 70;
+                document.getElementById('set-sso').value = s.sso_rate || 5;
+                document.getElementById('set-sso-max').value = s.sso_max || 750;
+            }
+            
+            renderOtherIncomeInputs();
+            renderContractorPage();
+            renderLedgerPage();
+            filterDailyList();
+            updateDash();
+        }
+
+        // ============================================================
+        // 4. NAVIGATION & HELPERS
+        // ============================================================
+        window.toggleSidebar = function() { 
+            document.getElementById('sidebar').classList.toggle('-translate-x-full'); 
+            document.getElementById('sidebar-overlay').classList.toggle('hidden'); 
+        }
+
+        window.nav = function(pageId) { 
+            document.querySelectorAll('.page').forEach(e => e.classList.remove('active')); 
+            document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active')); 
+            document.getElementById(pageId).classList.add('active'); 
+            
+            const map = {'dashboard':0, 'daily':1, 'payroll':2, 'contractor':3, 'ledger':4, 'employees':5, 'reports':6, 'settings':7};
+            const navItems = document.querySelectorAll('#sidebar .nav-item');
+            if(map[pageId]!==undefined && navItems[map[pageId]]) navItems[map[pageId]].classList.add('active');
+            
+            if(window.innerWidth < 768) toggleSidebar();
+            if(pageId==='dashboard') updateDash();
+        }
+
+        window.BahtText = function(num) {
+            num = parseFloat(num).toFixed(2);
+            if (isNaN(num)) return "ศูนย์บาทถ้วน";
+            const suffixes = ["", "สิบ", "ร้อย", "พัน", "หมื่น", "แสน", "ล้าน"];
+            const digits = ["ศูนย์", "หนึ่ง", "สอง", "สาม", "สี่", "ห้า", "หก", "เจ็ด", "แปด", "เก้า"];
+            let parts = num.split(".");
+            let baht = parts[0], satang = parts[1];
+            let result = ""; let len = baht.length;
+            for (let i = 0; i < len; i++) {
+                let digit = parseInt(baht.charAt(i)), pos = len - i - 1;
+                if (digit !== 0) {
+                    if (pos % 6 === 1 && digit === 1 && len > 1) result += ""; 
+                    else if (pos % 6 === 1 && digit === 2) result += "ยี่";
+                    else if (pos % 6 === 0 && digit === 1 && i > 0 && len > 1) result += "เอ็ด";
+                    else result += digits[digit];
+                    result += suffixes[pos % 6];
+                }
+                if (pos % 6 === 0 && pos > 0) result += "ล้าน";
+            }
+            result += "บาท";
+            if (Number(satang) === 0) result += "ถ้วน";
+            else {
+                for (let i = 0; i < 2; i++) {
+                    let digit = parseInt(satang.charAt(i)), pos = 1 - i;
+                    if (digit !== 0) {
+                        if (pos === 1 && digit === 1) result += "";
+                        else if (pos === 1 && digit === 2) result += "ยี่";
+                        else if (pos === 0 && digit === 1 && i > 0) result += "เอ็ด";
+                        else result += digits[digit];
+                        result += (pos === 1 ? "สิบ" : "");
+                    }
+                }
+                result += "สตางค์";
+            }
+            return result;
+        }
+
+        // ============================================================
+        // 5. DASHBOARD FUNCTIONS
+        // ============================================================
+        window.updateDash = function() {
+            document.getElementById('dash-total').innerText = appState.employees.filter(e => e.status !== 'Resigned').length;
+            const today = document.getElementById('d-date').value;
+            const cost = appState.dailyRecords.filter(r => r.date === today).reduce((s,r) => s + (r.net_total || 0), 0);
+            document.getElementById('dash-today-cost').innerText = cost.toLocaleString();
+            
+            let lastMonthNet = 0;
+            if (appState.history.length > 0) {
+                let sorted = [...appState.history].sort((a,b) => (b.year*100 + b.month) - (a.year*100 + a.month));
+                let lastY = sorted[0].year, lastM = sorted[0].month;
+                lastMonthNet = sorted.filter(h => h.year == lastY && h.month == lastM).reduce((sum, h) => sum + h.net, 0);
+            }
+            document.getElementById('dash-last-month').innerText = lastMonthNet.toLocaleString();
+            renderCharts();
+        }
+
+        window.renderCharts = function() { 
+            if(empChart) empChart.destroy(); 
+            const m = appState.employees.filter(e => e.prefix==='นาย'&&e.status!=='Resigned').length; 
+            const f = appState.employees.filter(e => e.prefix!=='นาย'&&e.status!=='Resigned').length; 
+            empChart = new Chart(document.getElementById('empChart').getContext('2d'), { 
+                type: 'doughnut', 
+                data: { labels: ['ชาย', 'หญิง'], datasets: [{ data: [m, f], backgroundColor: ['#3b82f6', '#ec4899'], borderWidth: 0 }] }, 
+                options: { maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom' } } } 
+            }); 
+            
+            if(salaryChart) salaryChart.destroy(); 
+            let labels=[], data=[]; 
+            const d = new Date(); let mCurr=d.getMonth()+1, yCurr=d.getFullYear(); 
+            const monthNames=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.']; 
+            for(let i=5;i>=0;i--){ 
+                let tm=mCurr-i, ty=yCurr; 
+                if(tm<=0){tm+=12;ty-=1;} 
+                labels.push(monthNames[tm-1]+"'"+ty.toString().substr(2)); 
+                data.push(appState.history.filter(h=>h.month==tm&&h.year==ty).reduce((s,h)=>s+h.net,0)); 
+            } 
+            salaryChart = new Chart(document.getElementById('salaryChart').getContext('2d'), { 
+                type: 'bar', 
+                data: { labels: labels, datasets: [{ label: 'ยอดจ่ายรวมสุทธิ', data: data, backgroundColor: '#10b981', borderRadius: 4 }] }, 
+                options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: {display:false} }, x: { grid: {display:false} } } } 
+            }); 
+        }
+
+        // ============================================================
+        // 6. DAILY RECORD LOGIC
+        // ============================================================
+        window.renderDailyEmpSelect = function() { 
+            const s = document.getElementById('d-emp'); 
+            s.innerHTML = '<option value="">-- เลือกพนักงาน --</option>'; 
+            appState.employees.filter(e => e.status !== 'Resigned').forEach(e => { 
+                s.innerHTML += `<option value="${e.id}">${e.prefix} ${e.fname} ${e.lname}</option>`; 
+            }); 
+        }
+
+        window.renderOtherIncomeInputs = function() { 
+            const c = document.getElementById('d-other-income-container'); 
+            c.innerHTML = ''; 
+            const cats = (appState.settings.income_categories || '').split(',').map(s => s.trim()).filter(s => s); 
+            if(cats.length === 0) { c.innerHTML = '<p class="text-xs text-slate-400 italic text-center">ไม่มีหมวดรายได้อื่นๆ</p>'; return; } 
+            cats.forEach((cat, i) => { 
+                c.innerHTML += `<div class="flex items-center justify-between py-2 border-b border-dashed border-slate-200 last:border-0"><div class="flex items-center"><input type="checkbox" id="chk-${i}" onchange="toggleOther(${i})" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"><label for="chk-${i}" class="ml-2 text-sm text-slate-600 cursor-pointer select-none">${cat}</label></div><input type="number" id="val-${i}" data-name="${cat}" class="form-control w-24 text-right h-9 text-sm" disabled placeholder="0" oninput="calcDaily()"></div>`; 
+            }); 
+        }
+
+        window.toggleOther = function(i) { 
+            const el = document.getElementById(`val-${i}`); 
+            el.disabled = !el.disabled; 
+            if(el.disabled) el.value = ''; else el.focus(); 
+            calcDaily(); 
+        }
+
+        window.calcDaily = function() { 
+            const v = (id) => parseFloat(document.getElementById(id).value) || 0; 
+            const ot = v('d-ot-hours') * v('d-ot-rate'); 
+            document.getElementById('d-ot-total').value = ot; 
+            document.getElementById('d-ot-total-disp').innerText = ot.toLocaleString(undefined, {minimumFractionDigits: 2}); 
+            
+            const trips = v('d-trip-count'); 
+            const thresh = parseFloat(appState.settings.trip_threshold) || 70; 
+            const bonus = trips > thresh ? (trips - thresh) * v('d-trip-rate') : 0; 
+            document.getElementById('d-trip-bonus').value = bonus; 
+            document.getElementById('trip-threshold-hint').innerText = trips > thresh ? `เกินเกณฑ์ ${trips-thresh} เที่ยว` : `(เกณฑ์: ${thresh})`;
+
+            let other = 0; 
+            document.querySelectorAll('[id^="val-"]').forEach(i => { if(!i.disabled) other += parseFloat(i.value) || 0; }); 
+            
+            const ded = v('d-deduct-advance') + v('d-deduct-absence'); 
+            const net = v('d-wage') + ot + bonus + other - ded; 
+            
+            document.getElementById('sum-wage').innerText = v('d-wage').toLocaleString(); 
+            document.getElementById('sum-ot').innerText = ot.toLocaleString(); 
+            document.getElementById('sum-other-all').innerText = (bonus + other).toLocaleString(); 
+            document.getElementById('sum-deduct').innerText = ded.toLocaleString(); 
+            document.getElementById('d-net-total').innerText = net.toLocaleString(undefined, {minimumFractionDigits: 2}); 
+        }
+
+        window.saveDaily = async function() { 
+            const empId = document.getElementById('d-emp').value; 
+            if(!empId) return; 
+            const emp = appState.employees.find(e => e.id == empId); 
+            let other = {}; 
+            document.querySelectorAll('[id^="val-"]').forEach(i => { if(!i.disabled && i.value) other[i.getAttribute('data-name')] = parseFloat(i.value); }); 
+            const shift = document.querySelector('input[name="d-shift"]:checked').value; 
+            
+            const data = { 
+                id: document.getElementById('d-record-id').value || 'REC-' + Date.now(), 
+                date: document.getElementById('d-date').value, 
+                emp_id: empId, 
+                name: `${emp.fname} ${emp.lname}`, 
+                shift: shift, 
+                wage: parseFloat(document.getElementById('d-wage').value) || 0, 
+                ot_hours: parseFloat(document.getElementById('d-ot-hours').value) || 0, 
+                ot_rate: parseFloat(document.getElementById('d-ot-rate').value) || 0, 
+                ot_total: parseFloat(document.getElementById('d-ot-total').value) || 0, 
+                trip_count: parseFloat(document.getElementById('d-trip-count').value) || 0, 
+                trip_rate: parseFloat(document.getElementById('d-trip-rate').value) || 0, 
+                trip_bonus: parseFloat(document.getElementById('d-trip-bonus').value) || 0, 
+                other_income: other, 
+                deduct_advance: parseFloat(document.getElementById('d-deduct-advance').value) || 0, 
+                deduct_absence: parseFloat(document.getElementById('d-deduct-absence').value) || 0, 
+                net_total: parseFloat(document.getElementById('d-net-total').innerText.replace(/,/g, '')), 
+                remarks: document.getElementById('d-remarks').value 
+            }; 
+            
+            Swal.fire({ title: 'กำลังบันทึก...', didOpen: () => Swal.showLoading() }); 
+            const { data: res, error } = await db.from('daily_records').upsert(data).select();
+            
+            if(!error) {
+                const idx = appState.dailyRecords.findIndex(r => r.id === data.id); 
+                if(idx > -1) appState.dailyRecords[idx] = data; else appState.dailyRecords.push(data); 
+                filterDailyList(); updateDash(); 
+                Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1500, showConfirmButton: false }); 
+            } else {
+                Swal.fire('Error', error.message, 'error');
+            }
+        }
+
+        window.filterDailyList = function() { 
+            const date = document.getElementById('d-date').value; 
+            const list = appState.dailyRecords.filter(r => r.date === date); 
+            document.getElementById('daily-list').innerHTML = list.length ? list.map(r => `<div class="px-4 py-3 hover:bg-slate-50 flex justify-between items-center group transition"><div><div class="font-bold text-slate-700">${r.name}</div><div class="text-xs text-slate-500 flex items-center gap-2 mt-1"><span class="px-1.5 py-0.5 rounded ${r.shift === 'Day' ? 'bg-orange-100 text-orange-600' : 'bg-indigo-100 text-indigo-600'}">${r.shift === 'Day' ? 'กลางวัน' : 'กลางคืน'}</span><span>OT: ${r.ot_hours} ชม.</span></div></div><div class="flex items-center gap-2"><span class="font-bold text-blue-600 mr-2">${r.net_total.toLocaleString()}</span><div class="flex gap-1"><button onclick="viewDaily('${r.id}')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200"><i class="fa-solid fa-eye"></i></button><button onclick="document.getElementById('d-emp').value='${r.emp_id}';selectDailyEmp();window.scrollTo({top:0,behavior:'smooth'});" class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100"><i class="fa-solid fa-pen"></i></button><button onclick="deleteDaily('${r.id}')" class="w-8 h-8 rounded-full bg-red-50 text-red-600 hover:bg-red-100"><i class="fa-solid fa-trash"></i></button></div></div></div>`).join('') : '<div class="p-8 text-center text-slate-400 text-sm">ยังไม่มีรายการบันทึกของวันนี้</div>'; 
+            document.getElementById('daily-count-badge').innerText = list.length;
+        }
+
+        window.viewDaily = function(id) { 
+            const r = appState.dailyRecords.find(d => d.id === id); 
+            if(!r) return; 
+            const other = r.other_income || {}; 
+            const otherText = Object.entries(other).map(([k,v]) => `<div class="flex justify-between"><span>${k}</span><span>${v}</span></div>`).join('') || '-'; 
+            
+            const thresh = parseFloat(appState.settings.trip_threshold) || 70;
+            const extra = r.trip_count > thresh ? r.trip_count - thresh : 0;
+            const tripDetail = `โบนัสเที่ยว (${r.trip_count} เที่ยว) ${extra > 0 ? `<span class='text-xs text-purple-600 font-bold'>(เที่ยวพิเศษ ${extra})</span>` : ''}`;
+
+            Swal.fire({ 
+                title: r.name, 
+                html: `<div class="text-sm text-left space-y-2"><div class="flex justify-between border-b pb-1"><span>กะ</span><span class="font-bold">${r.shift === 'Day' ? 'กลางวัน' : 'กลางคืน'}</span></div><div class="flex justify-between border-b pb-1"><span>ค่าแรง</span><span>${r.wage.toLocaleString()}</span></div><div class="flex justify-between border-b pb-1"><span>OT (${r.ot_hours} ชม.)</span><span>${r.ot_total.toLocaleString()}</span></div><div class="flex justify-between border-b pb-1"><span>${tripDetail}</span><span>${r.trip_bonus.toLocaleString()}</span></div><div class="bg-slate-50 p-2 rounded"><b>รายได้อื่นๆ:</b>${otherText}</div><div class="flex justify-between text-red-600"><span>หัก (เบิก/ขาด)</span><span>${(r.deduct_advance + r.deduct_absence).toLocaleString()}</span></div><div class="mt-2 text-slate-500 italic text-xs">หมายเหตุ: ${r.remarks || '-'}</div><div class="text-right text-xl font-bold mt-4 text-blue-600">สุทธิ: ${r.net_total.toLocaleString()}</div></div>`, 
+                confirmButtonText: 'ปิด', 
+                confirmButtonColor: '#64748b' 
+            }); 
+        }
+
+        window.deleteDaily = async function(id) { 
+            const cfm = await Swal.fire({ title: 'ยืนยันการลบ?', text: "รายการนี้จะหายไปถาวร", icon: 'warning', showCancelButton: true, confirmButtonText: 'ลบรายการ', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#ef4444' });
+            if(cfm.isConfirmed) { 
+                const { error } = await db.from('daily_records').delete().eq('id', id);
+                if(!error) {
+                    appState.dailyRecords = appState.dailyRecords.filter(r => r.id != id); 
+                    filterDailyList(); updateDash(); 
+                    Swal.fire('ลบเรียบร้อย', '', 'success'); 
+                }
+            } 
+        }
+
+        window.selectDailyEmp = function() { 
+            try { 
+                const empId = document.getElementById('d-emp').value; 
+                const form = document.getElementById('daily-form-area'); 
+                const btn = document.getElementById('btn-save-daily'); 
+                const posDisp = document.getElementById('d-pos-display'); 
+                
+                if(!empId) { 
+                    form.classList.add('opacity-50', 'pointer-events-none'); 
+                    btn.disabled = true; posDisp.innerText = ''; 
+                    document.getElementById('emp-stats-area').classList.add('hidden'); 
+                    resetDailyForm(false); return; 
+                } 
+                
+                form.classList.remove('opacity-50', 'pointer-events-none'); 
+                btn.disabled = false; 
+                const emp = appState.employees.find(e => e.id == empId); 
+                if(emp) posDisp.innerText = `ตำแหน่ง: ${emp.pos}`; 
+                updateEmpStatsCard(); 
+                
+                const date = document.getElementById('d-date').value; 
+                const exist = appState.dailyRecords.find(r => r.date === date && r.emp_id === empId); 
+                if(exist) { 
+                    document.getElementById('d-record-id').value = exist.id; 
+                    document.getElementById('d-wage').value = exist.wage; 
+                    document.getElementById('d-remarks').value = exist.remarks || ''; 
+                    document.getElementById('d-ot-hours').value = exist.ot_hours; 
+                    document.getElementById('d-ot-rate').value = exist.ot_rate; 
+                    document.getElementById('d-trip-count').value = exist.trip_count; 
+                    document.getElementById('d-trip-rate').value = exist.trip_rate; 
+                    document.getElementById('d-deduct-advance').value = exist.deduct_advance; 
+                    document.getElementById('d-deduct-absence').value = exist.deduct_absence; 
+                    const shifts = document.getElementsByName('d-shift'); 
+                    shifts.forEach(s => s.checked = (s.value === (exist.shift || 'Day'))); 
+                    
+                    const o = exist.other_income || {}; 
+                    document.querySelectorAll('[id^="val-"]').forEach(inp => { 
+                        const n = inp.getAttribute('data-name'); 
+                        const chk = document.getElementById(inp.id.replace('val','chk')); 
+                        if(o[n]) { inp.value = o[n]; inp.disabled = false; if(chk) chk.checked = true; } 
+                        else { inp.value = ''; inp.disabled = true; if(chk) chk.checked = false; } 
+                    }); 
+                } else { 
+                    resetDailyForm(false); 
+                    document.getElementById('d-record-id').value = ''; 
+                } 
+                calcDaily(); 
+            } catch(e) { console.error(e); } 
+        }
+
+        window.updateEmpStatsCard = function() { 
+            const empId = document.getElementById('d-emp').value; 
+            const dateStr = document.getElementById('d-date').value; 
+            if(!empId || !dateStr) { document.getElementById('emp-stats-area').classList.add('hidden'); return; } 
+            
+            const d = new Date(dateStr); 
+            const day = d.getDate(); const month = d.getMonth() + 1; const year = d.getFullYear(); 
+            let period = 1; let startDate = 1; let endDate = 15; 
+            if (day > 15) { period = 2; startDate = 16; endDate = 31; } 
+            
+            const records = appState.dailyRecords.filter(r => { 
+                const rd = new Date(r.date); 
+                return r.emp_id == empId && rd.getFullYear() == year && (rd.getMonth() + 1) == month && rd.getDate() >= startDate && rd.getDate() <= endDate; 
+            }); 
+            const totalWage = records.reduce((sum, r) => sum + (r.wage || 0), 0); 
+            const totalOt = records.reduce((sum, r) => sum + (r.ot_total || 0), 0); 
+            const totalTripBonus = records.reduce((sum, r) => sum + (r.trip_bonus || 0), 0); 
+            const totalDeduct = records.reduce((sum, r) => sum + (r.deduct_advance || 0) + (r.deduct_absence || 0), 0); 
+            let totalOther = 0; 
+            records.forEach(r => { const o = r.other_income || {}; Object.values(o).forEach(val => totalOther += (parseFloat(val) || 0)); }); 
+            const grandTotal = totalWage + totalOt + totalTripBonus + totalOther - totalDeduct; 
+            
+            document.getElementById('stat-days').innerText = records.length; 
+            document.getElementById('stat-ot').innerText = totalOt.toLocaleString(); 
+            document.getElementById('stat-trip').innerText = totalTripBonus.toLocaleString(); 
+            document.getElementById('stat-deduct').innerText = totalDeduct.toLocaleString(); 
+            document.getElementById('stat-total').innerText = grandTotal.toLocaleString(); 
+            document.getElementById('stat-period-label').innerText = `งวด: ${period} (${month}/${year})`; 
+            document.getElementById('emp-stats-area').classList.remove('hidden'); 
+        }
+
+        window.resetDailyForm = function(clearEmp = true) { 
+            if(clearEmp) document.getElementById('d-emp').value = ''; 
+            document.getElementById('d-record-id').value = ''; 
+            document.getElementById('d-wage').value = ''; 
+            document.getElementById('d-ot-hours').value = ''; 
+            document.getElementById('d-ot-rate').value = '50'; 
+            document.getElementById('d-ot-total').value = '0'; 
+            document.getElementById('d-ot-total-disp').innerText = '0.00'; 
+            document.getElementById('d-trip-count').value = ''; 
+            document.getElementById('d-trip-rate').value = '10'; 
+            document.getElementById('d-trip-bonus').value = '0'; 
+            document.getElementById('d-deduct-advance').value = ''; 
+            document.getElementById('d-deduct-absence').value = ''; 
+            document.getElementById('d-remarks').value = ''; 
+            document.getElementById('sum-wage').innerText = '0.00'; 
+            document.getElementById('sum-ot').innerText = '0.00'; 
+            document.getElementById('sum-other-all').innerText = '0.00'; 
+            document.getElementById('sum-deduct').innerText = '0.00'; 
+            document.getElementById('d-net-total').innerText = '0.00'; 
+            document.querySelectorAll('[id^="val-"]').forEach(i => { i.value = ''; i.disabled = true; }); 
+            document.querySelectorAll('[id^="chk-"]').forEach(c => c.checked = false); 
+            const r = document.querySelector('input[name="d-shift"][value="Day"]'); if(r) r.checked = true; 
+            if(clearEmp) { 
+                document.getElementById('btn-save-daily').disabled = true; 
+                document.getElementById('daily-form-area').classList.add('opacity-50', 'pointer-events-none'); 
+                document.getElementById('emp-stats-area').classList.add('hidden'); 
+                document.getElementById('d-pos-display').innerText = ''; 
+            } 
+        }
+
+        // ============================================================
+        // 7. EMPLOYEES LOGIC
+        // ============================================================
+        window.filterEmpTable = function(type, btn) { 
+            currentEmpFilter = type; 
+            if(btn) { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); } 
+            renderEmpTable(type); 
+        }
+
+        window.renderEmpTable = function(filter) { 
+            const list = appState.employees.filter(e => filter === 'All' ? true : e.type === filter); 
+            const count = (arr, type, gender) => arr.filter(e => (type==='All' || e.type===type) && (gender==='All' || (gender==='M' ? e.prefix==='นาย' : e.prefix!=='นาย'))).length; 
+            const all = appState.employees.filter(e => e.status !== 'Resigned'); 
+            
+            document.getElementById('estat-total').innerText = all.length; 
+            document.getElementById('estat-total-m').innerText = count(all, 'All', 'M'); document.getElementById('estat-total-f').innerText = count(all, 'All', 'F'); 
+            const monthly = all.filter(e => e.type === 'Monthly'); 
+            document.getElementById('estat-monthly').innerText = monthly.length; 
+            document.getElementById('estat-monthly-m').innerText = count(monthly, 'Monthly', 'M'); document.getElementById('estat-monthly-f').innerText = count(monthly, 'Monthly', 'F'); 
+            const contractor = all.filter(e => e.type === 'Contractor'); 
+            document.getElementById('estat-contractor').innerText = contractor.length; 
+            document.getElementById('estat-contractor-m').innerText = count(contractor, 'Contractor', 'M'); document.getElementById('estat-contractor-f').innerText = count(contractor, 'Contractor', 'F'); 
+            
+            document.getElementById('emp-list').innerHTML = list.map((e, i) => `<tr class="hover:bg-slate-50 transition"><td class="p-4 font-mono text-xs text-slate-500">${e.id}</td><td class="p-4 font-bold text-slate-700">${e.prefix} ${e.fname} ${e.lname}</td><td class="p-4 text-xs"><span class="px-2 py-1 rounded ${e.type==='Contractor'?'bg-orange-100 text-orange-700':'bg-blue-100 text-blue-700'}">${e.type==='Contractor'?'รับเหมา':'ประจำ'}</span></td><td class="p-4 text-slate-600">${e.pos}</td><td class="p-4 text-right font-mono text-slate-700">${e.salary.toLocaleString()}</td><td class="p-4 text-center"><span class="px-2 py-1 rounded-full text-xs font-bold ${e.status=='Active'?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}">${e.status=='Active'?'ปกติ':'ลาออก'}</span></td><td class="p-4 text-center"><button onclick="viewEmp('${e.id}')" class="text-slate-500 hover:text-slate-700 mx-1"><i class="fa-solid fa-eye"></i></button><button onclick="editEmp('${e.id}')" class="text-blue-500 hover:text-blue-700 mx-1"><i class="fa-solid fa-pen-to-square"></i></button><button onclick="delEmp('${e.id}')" class="text-red-400 hover:text-red-600 mx-1"><i class="fa-solid fa-trash-can"></i></button></td></tr>`).join(''); 
+        }
+
+        window.openAddEmpModal = function() { 
+            document.getElementById('empModal').classList.remove('hidden'); 
+            document.getElementById('e-edit-mode').value = 'false'; 
+            document.getElementById('e-id').value = ''; 
+            document.getElementById('e-fname').value = ''; 
+            document.getElementById('e-lname').value = ''; 
+            document.getElementById('e-salary').value = ''; 
+            document.getElementById('e-address').value = ''; 
+            toggleResignInput(); 
+        }
+
+        window.editEmp = function(id) { 
+            const e = appState.employees.find(x => x.id == id); 
+            document.getElementById('empModal').classList.remove('hidden'); 
+            document.getElementById('e-edit-mode').value = 'true'; 
+            document.getElementById('e-id').value = e.id; 
+            document.getElementById('e-prefix').value = e.prefix; 
+            document.getElementById('e-fname').value = e.fname; 
+            document.getElementById('e-lname').value = e.lname; 
+            document.getElementById('e-pos').value = e.pos; 
+            document.getElementById('e-salary').value = e.salary; 
+            document.getElementById('e-bank').value = e.bank; 
+            document.getElementById('e-start').value = e.start_date; 
+            document.getElementById('e-status').value = e.status; 
+            document.getElementById('e-resign').value = e.resign_date || ''; 
+            document.getElementById('e-address').value = e.address || ''; 
+            const radios = document.getElementsByName('e-type'); 
+            for(let r of radios) r.checked = (r.value === (e.type || 'Monthly')); 
+            toggleResignInput(); 
+        }
+
+        window.handleEmpSubmit = async function(e) { 
+            e.preventDefault(); 
+            const type = document.querySelector('input[name="e-type"]:checked').value; 
+            const d = { 
+                id: document.getElementById('e-id').value, 
+                prefix: document.getElementById('e-prefix').value, 
+                fname: document.getElementById('e-fname').value, 
+                lname: document.getElementById('e-lname').value, 
+                pos: document.getElementById('e-pos').value, 
+                salary: parseFloat(document.getElementById('e-salary').value) || 0, 
+                bank: document.getElementById('e-bank').value, 
+                status: document.getElementById('e-status').value, 
+                start_date: document.getElementById('e-start').value, 
+                resign_date: document.getElementById('e-resign').value, 
+                gender: '-', 
+                type: type, 
+                address: document.getElementById('e-address').value 
+            }; 
+            
+            const { error } = await db.from('employees').upsert(d);
+            
+            if(!error) {
+                const idx = appState.employees.findIndex(em => em.id == d.id); 
+                if(idx > -1) appState.employees[idx] = d; else appState.employees.push(d); 
+                renderEmpTable(currentEmpFilter); renderContractorPage(); 
+                document.getElementById('empModal').classList.add('hidden'); 
+                Swal.fire('บันทึกสำเร็จ', '', 'success'); 
+            }
+        }
+
+        window.viewEmp = function(id) { 
+            const e = appState.employees.find(x => x.id == id); if(!e) return; 
+            Swal.fire({ title: 'ข้อมูลพนักงาน', html: `<div class="text-left text-sm space-y-3 p-2"><div class="flex items-center gap-4 bg-slate-50 p-3 rounded-xl border border-slate-200"><div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xl">${e.fname.charAt(0)}</div><div><div class="font-bold text-lg text-slate-800">${e.prefix} ${e.fname} ${e.lname}</div><div class="text-slate-500 text-xs">${e.pos} (${e.type === 'Contractor' ? 'รับเหมา' : 'ประจำ'})</div></div></div><div class="grid grid-cols-2 gap-2"><div class="text-slate-500 text-xs">รหัส/ID</div><div class="font-mono font-bold">${e.id}</div></div><div class="grid grid-cols-2 gap-2"><div class="text-slate-500 text-xs">เริ่มงาน</div><div>${e.start_date || '-'}</div></div><div class="grid grid-cols-2 gap-2"><div class="text-slate-500 text-xs">เงินเดือนฐาน</div><div class="font-bold text-green-600">${e.salary.toLocaleString()} บาท</div></div><div><div class="text-slate-500 text-xs mb-1">ที่อยู่</div><div class="bg-slate-50 p-2 rounded text-slate-700 border border-slate-100">${e.address || '-'}</div></div><div><div class="text-slate-500 text-xs mb-1">เลขที่บัญชี</div><div class="font-mono bg-blue-50 text-blue-800 p-2 rounded border border-blue-100">${e.bank || '-'}</div></div><div class="text-xs text-right text-slate-400 pt-2 border-t">สถานะ: ${e.status}</div></div>`, showCloseButton: true, showConfirmButton: false }); 
+        }
+
+        window.delEmp = async function(id) { 
+            const r = await Swal.fire({ title:'ยืนยันลบ?', icon:'warning', showCancelButton:true });
+            if(r.isConfirmed) {
+                const { error } = await db.from('employees').delete().eq('id', id);
+                if(!error) {
+                    appState.employees = appState.employees.filter(e => e.id != id); 
+                    renderEmpTable(currentEmpFilter);
+                }
+            }
+        }
+
+        window.toggleResignInput = function() { 
+            const status = document.getElementById('e-status').value; 
+            document.getElementById('div-resign-date').classList.toggle('hidden', status !== 'Resigned'); 
+        }
+
+        // ============================================================
+        // 8. PAYROLL LOGIC
+        // ============================================================
+        window.initDateDropdowns = function() { 
+            const d = new Date(); const curYear = d.getFullYear(); const curMonth = d.getMonth() + 1; 
+            const py = document.getElementById('pay-year'); const pm = document.getElementById('pay-month'); const pp = document.getElementById('pay-period'); 
+            if(py && pm && pp) { 
+                py.innerHTML = ''; for(let i=0; i<3; i++) py.innerHTML += `<option value="${curYear-i}">${curYear-i}</option>`; 
+                pm.innerHTML = ''; ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."].forEach((m,i) => pm.innerHTML += `<option value="${i+1}" ${i+1===curMonth?'selected':''}>${m}</option>`); 
+                pp.innerHTML = '<option value="1">งวดที่ 1 (วันที่ 1-15)</option><option value="2">งวดที่ 2 (วันที่ 16-สิ้นเดือน)</option>'; 
+                if(d.getDate() > 15) pp.value = "2"; 
+            } 
+            initYearSelect('rpt-year'); initMonthSelect('rpt-month'); 
+            initYearSelect('rpt-c-year'); initMonthSelect('rpt-c-month'); 
+            initYearSelect('rpt-l-year'); initMonthSelect('rpt-l-month'); 
+            initYearSelect('rpt-t-year'); initMonthSelect('rpt-t-month'); 
+        }
+
+        window.renderPayrollEmpSelect = function() { 
+            const s = document.getElementById('inp-p-employee'); if(!s) return; 
+            s.innerHTML = '<option value="">-- เลือกพนักงาน --</option>'; 
+            appState.employees.filter(e => e.status !== 'Resigned' && e.type === 'Monthly').forEach(e => { s.innerHTML += `<option value="${e.id}">${e.prefix} ${e.fname} ${e.lname}</option>`; }); 
+        }
+
+        window.selectPayrollEmp = function() { 
+            const empId = document.getElementById('inp-p-employee').value; 
+            const btn = document.getElementById('btn-save-payroll'); 
+            const posDisp = document.getElementById('p-pos-display'); 
+            if(!empId) { resetPayrollForm(false); posDisp.innerText = ''; btn.disabled = true; return; } 
+            
+            const emp = appState.employees.find(e => e.id == empId); 
+            if(emp) posDisp.innerText = `ตำแหน่ง: ${emp.pos} | ฐานเงินเดือน: ${emp.salary.toLocaleString()}`; 
+            btn.disabled = false; 
+            
+            const month = parseInt(document.getElementById('pay-month').value); 
+            const year = parseInt(document.getElementById('pay-year').value); 
+            const period = parseInt(document.getElementById('pay-period').value); 
+            let dStart = 1, dEnd = 15; if(period === 2) { dStart = 16; dEnd = 31; } 
+            
+            const records = appState.dailyRecords.filter(r => { const d = new Date(r.date); return r.emp_id == empId && d.getFullYear() == year && (d.getMonth()+1) == month && d.getDate() >= dStart && d.getDate() <= dEnd; }); 
+            let salary = emp.salary / 2; 
+            const ot = records.reduce((s,r) => s + (r.ot_total||0), 0); 
+            const bonus = records.reduce((s,r) => s + (r.trip_bonus||0), 0); 
+            let otherDaily = 0; records.forEach(r => { const o = r.other_income||{}; Object.values(o).forEach(v => otherDaily += parseFloat(v)||0); }); 
+            const deductAdv = records.reduce((s,r) => s + (r.deduct_advance||0), 0); 
+            
+            document.getElementById('inp-p-salary').value = salary; 
+            document.getElementById('inp-p-incentive').value = ot + bonus + otherDaily; 
+            document.getElementById('inp-p-advance').value = deductAdv; 
+            
+            const ssoRate = parseFloat(appState.settings.sso_rate || 0.05); 
+            const ssoMax = parseFloat(appState.settings.sso_max || 750);
+            let sso = 0; 
+            if(period === 2) { 
+                let base = emp.salary; 
+                if(base > 15000) base = 15000; if(base < 1650) base = 1650; 
+                sso = Math.floor(base * ssoRate); 
+                if(sso > ssoMax) sso = ssoMax;
+            } 
+            document.getElementById('inp-p-sso').value = sso; 
+            calcPayroll(); 
+        }
+
+        window.calcPayroll = function() { 
+            const v = (id) => parseFloat(document.getElementById(id).value) || 0; 
+            const income = v('inp-p-salary') + v('inp-p-incentive') + v('inp-p-other'); 
+            const deduct = v('inp-p-sso') + v('inp-p-tax') + v('inp-p-advance') + v('inp-p-water') + v('inp-p-electricity'); 
+            const net = income - deduct; 
+            document.getElementById('disp-p-income').innerText = income.toLocaleString(); 
+            document.getElementById('disp-p-deduct').innerText = deduct.toLocaleString(); 
+            document.getElementById('disp-p-net').innerText = net.toLocaleString(undefined, {minimumFractionDigits: 2}); 
+        }
+
+        window.resetPayrollForm = function(clearEmp = true) { 
+            if(clearEmp) document.getElementById('inp-p-employee').value = ''; 
+            ['inp-p-salary','inp-p-incentive','inp-p-other','inp-p-sso','inp-p-tax','inp-p-advance','inp-p-water','inp-p-electricity'].forEach(id => document.getElementById(id).value = ''); 
+            document.getElementById('disp-p-income').innerText = '0.00'; 
+            document.getElementById('disp-p-deduct').innerText = '0.00'; 
+            document.getElementById('disp-p-net').innerText = '0.00'; 
+            if(clearEmp) document.getElementById('p-pos-display').innerText = ''; 
+        }
+
+        window.savePayroll = function() { 
+            const empId = document.getElementById('inp-p-employee').value; if(!empId) return; 
+            const emp = appState.employees.find(e => e.id == empId); 
+            const data = { 
+                emp_id: empId, 
+                name: `${emp.prefix}${emp.fname} ${emp.lname}`, 
+                pos: emp.pos, 
+                salary: parseFloat(document.getElementById('inp-p-salary').value)||0, 
+                incentive: parseFloat(document.getElementById('inp-p-incentive').value)||0, 
+                other: parseFloat(document.getElementById('inp-p-other').value)||0, 
+                sso: parseFloat(document.getElementById('inp-p-sso').value)||0, 
+                tax: parseFloat(document.getElementById('inp-p-tax').value)||0, 
+                advance: parseFloat(document.getElementById('inp-p-advance').value)||0, 
+                water: parseFloat(document.getElementById('inp-p-water').value)||0, 
+                electricity: parseFloat(document.getElementById('inp-p-electricity').value)||0, 
+                net: parseFloat(document.getElementById('disp-p-net').innerText.replace(/,/g, '')), 
+                bank: emp.bank, 
+                period: parseInt(document.getElementById('pay-period').value), 
+                month: parseInt(document.getElementById('pay-month').value), 
+                year: parseInt(document.getElementById('pay-year').value) 
+            }; 
+            appState.payrollTemp.push(data); 
+            resetPayrollForm(true); renderPayrollTempTable(); 
+            Swal.fire({icon: 'success', title: 'เพิ่มรายการแล้ว', text: 'ข้อมูลอยู่ในตารางด้านล่าง กด "บันทึกเข้าระบบทั้งหมด" เพื่อยืนยัน', timer: 1500, showConfirmButton: false}); 
+        }
+
+        window.renderPayrollTempTable = function() { 
+            const tbody = document.getElementById('table-payroll-recorded'); 
+            if(appState.payrollTemp.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400">ยังไม่มีรายการ</td></tr>'; return; } 
+            tbody.innerHTML = appState.payrollTemp.map((t,i) => `<tr><td class="p-4">${t.name}</td><td class="p-4 text-right">${t.salary.toLocaleString()}</td><td class="p-4 text-right text-green-600">${(t.incentive+t.other).toLocaleString()}</td><td class="p-4 text-right text-red-500">${(t.sso+t.tax+t.advance+t.water+t.electricity).toLocaleString()}</td><td class="p-4 text-right font-bold text-slate-800">${t.net.toLocaleString()}</td><td class="p-4 text-center flex justify-center gap-2"><button onclick="editPayrollTemp(${i})" class="text-blue-500 hover:text-blue-700 mx-1"><i class="fa-solid fa-pen"></i></button><button onclick="removePayrollTemp(${i})" class="text-red-400 hover:text-red-600 mx-1" title="ลบ"><i class="fa-solid fa-trash"></i></button></td></tr>`).join(''); 
+        }
+
+        window.editPayrollTemp = function(index) {
+            const data = appState.payrollTemp[index];
+            document.getElementById('inp-p-employee').value = data.emp_id;
+            
+            const emp = appState.employees.find(e => e.id == data.emp_id); 
+            if(emp) document.getElementById('p-pos-display').innerText = `ตำแหน่ง: ${emp.pos} | ฐานเงินเดือน: ${emp.salary.toLocaleString()}`; 
+            document.getElementById('btn-save-payroll').disabled = false;
+
+            document.getElementById('pay-month').value = data.month;
+            document.getElementById('pay-year').value = data.year;
+            document.getElementById('pay-period').value = data.period;
+
+            document.getElementById('inp-p-salary').value = data.salary;
+            document.getElementById('inp-p-incentive').value = data.incentive;
+            document.getElementById('inp-p-other').value = data.other;
+            document.getElementById('inp-p-sso').value = data.sso;
+            document.getElementById('inp-p-tax').value = data.tax;
+            document.getElementById('inp-p-advance').value = data.advance;
+            document.getElementById('inp-p-water').value = data.water;
+            document.getElementById('inp-p-electricity').value = data.electricity;
+            
+            calcPayroll();
+            removePayrollTemp(index);
+            window.scrollTo({top:0,behavior:'smooth'});
+        }
+
+        window.removePayrollTemp = function(index) { appState.payrollTemp.splice(index, 1); renderPayrollTempTable(); }
+
+        window.savePayrollBatchToDB = async function() { 
+            if(appState.payrollTemp.length === 0) return Swal.fire('ไม่มีรายการ', '', 'warning'); 
+            Swal.fire({title:'กำลังบันทึก...', didOpen: () => Swal.showLoading()}); 
+            
+            const { error } = await db.from('payroll_history').insert(appState.payrollTemp);
+            
+            if(!error) {
+                appState.history.push(...appState.payrollTemp);
+                appState.payrollTemp = []; 
+                renderPayrollTempTable(); 
+                Swal.fire('บันทึกเรียบร้อย', '', 'success'); 
+            }
+        }
+
+        // ============================================================
+        // 9. CONTRACTOR LOGIC
+        // ============================================================
+        window.renderContractorPage = function() { 
+            const s = document.getElementById('c-emp'); s.innerHTML = '<option value="">-- เลือกผู้รับเหมา --</option>'; 
+            appState.employees.filter(e => e.type === 'Contractor' && e.status === 'Active').forEach(e => { s.innerHTML += `<option value="${e.id}">${e.prefix} ${e.fname} ${e.lname}</option>`; }); 
+            renderContractorList(); 
+        }
+
+        window.calcWHT = function() { 
+            const amount = parseFloat(document.getElementById('c-amount').value) || 0; 
+            const rate = parseFloat(document.querySelector('input[name="c-wht"]:checked').value); 
+            const tax = amount * (rate / 100); const net = amount - tax; 
+            document.getElementById('c-tax-disp').innerText = tax.toLocaleString(undefined, {minimumFractionDigits: 2}); 
+            document.getElementById('c-net-disp').innerText = net.toLocaleString(undefined, {minimumFractionDigits: 2}); 
+        }
+
+        window.saveContractorJob = async function() { 
+            const empId = document.getElementById('c-emp').value; 
+            if(!empId) return Swal.fire('กรุณาเลือกผู้รับเหมา', '', 'warning'); 
+            
+            const amount = parseFloat(document.getElementById('c-amount').value) || 0; 
+            const rate = parseFloat(document.querySelector('input[name="c-wht"]:checked').value); 
+            const tax = amount * (rate / 100); 
+            
+            const d = { 
+                id: document.getElementById('c-id').value || 'PRJ-'+Date.now(), 
+                date: document.getElementById('c-date').value, 
+                emp_id: empId, 
+                job_name: document.getElementById('c-job').value, 
+                amount: amount, 
+                wht_rate: rate, 
+                tax: tax, 
+                net: amount - tax, 
+                payment_date: document.getElementById('c-pay-date').value 
+            }; 
+            
+            Swal.fire({title: 'กำลังบันทึก', didOpen: () => Swal.showLoading()}); 
+            const { error } = await db.from('projects').upsert(d);
+            
+            if(!error) {
+                const idx = appState.projects.findIndex(p => p.id == d.id); 
+                if(idx > -1) appState.projects[idx] = d; else appState.projects.push(d); 
+                resetContractorForm(); renderContractorList(); 
+                Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', html: 'ต้องการพิมพ์ใบสำคัญจ่ายเลยไหม?', showCancelButton: true, confirmButtonText: 'พิมพ์เลย' }).then(r => { if(r.isConfirmed) printPaymentVoucher(d.id); }); 
+            }
+        }
+
+        window.changeContractorMonth = function(step) {
+            appState.nav.cMonth += step;
+            if(appState.nav.cMonth > 12) { appState.nav.cMonth = 1; appState.nav.cYear++; }
+            else if(appState.nav.cMonth < 1) { appState.nav.cMonth = 12; appState.nav.cYear--; }
+            renderContractorList();
+        }
+
+        window.renderContractorList = function() { 
+            const m = appState.nav.cMonth; const y = appState.nav.cYear; 
+            const list = appState.projects.filter(p => { const d = new Date(p.date); return d.getMonth()+1 === m && d.getFullYear() === y; }); 
+            document.getElementById('c-list-month').innerText = `ข้อมูลเดือน ${m}/${y}`; 
+            document.getElementById('con-stat-count').innerText = list.length; 
+            document.getElementById('con-stat-total').innerText = list.reduce((s,i)=>s+i.amount,0).toLocaleString(); 
+            document.getElementById('con-stat-tax').innerText = list.reduce((s,i)=>s+i.tax,0).toLocaleString(); 
+            document.getElementById('c-list').innerHTML = list.map(p => { 
+                const emp = appState.employees.find(e => e.id == p.emp_id) || {fname:'Unknown', lname:''}; 
+                return `<tr class="hover:bg-slate-50 border-b"><td class="p-4 text-xs">${p.date}</td><td class="p-4"><div class="font-bold text-slate-700">${emp.fname} ${emp.lname}</div><div class="text-xs text-slate-500">${p.job_name}</div></td><td class="p-4 text-right">${p.amount.toLocaleString()}</td><td class="p-4 text-right text-red-500">${p.tax.toLocaleString()}</td><td class="p-4 text-right font-bold text-green-700">${p.net.toLocaleString()}</td><td class="p-4 text-center flex justify-center gap-1"><button onclick="viewProject('${p.id}')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-600"><i class="fa-solid fa-eye"></i></button><button onclick="printPaymentVoucher('${p.id}')" class="w-8 h-8 rounded-full bg-slate-800 text-white"><i class="fa-solid fa-print"></i></button><button onclick="editProject('${p.id}')" class="w-8 h-8 rounded-full bg-blue-100 text-blue-600"><i class="fa-solid fa-pen"></i></button><button onclick="delProject('${p.id}')" class="w-8 h-8 rounded-full bg-red-100 text-red-600"><i class="fa-solid fa-trash"></i></button></td></tr>`; 
+            }).join(''); 
+        }
+
+        window.viewProject = function(id) { 
+            const p = appState.projects.find(x => x.id == id); if(!p) return; 
+            const emp = appState.employees.find(e => e.id == p.emp_id) || {fname:'Unknown', lname:''}; 
+            Swal.fire({ title: 'รายละเอียดงาน', html: `<div class="text-left space-y-2 text-sm"><div class="font-bold border-b pb-1">ข้อมูลงาน</div><div class="flex justify-between"><span>วันที่:</span><span>${p.date}</span></div><div class="flex justify-between"><span>ผู้รับเหมา:</span><span>${emp.fname} ${emp.lname}</span></div><div class="flex justify-between"><span>ชื่องาน:</span><span>${p.job_name}</span></div><div class="font-bold border-b pb-1 mt-3">การจ่ายเงิน</div><div class="flex justify-between"><span>ค่าจ้าง:</span><span>${p.amount.toLocaleString()}</span></div><div class="flex justify-between text-red-500"><span>หัก ณ ที่จ่าย (${p.wht_rate}%):</span><span>${p.tax.toLocaleString()}</span></div><div class="flex justify-between font-bold text-green-600 text-lg"><span>สุทธิ:</span><span>${p.net.toLocaleString()}</span></div><div class="flex justify-between mt-2 text-xs text-slate-400"><span>วันที่จ่าย:</span><span>${p.payment_date||'-'}</span></div></div>`, showCloseButton: true, showConfirmButton: false }); 
+        }
+
+        window.resetContractorForm = function() { document.getElementById('c-id').value = ''; document.getElementById('c-emp').value = ''; document.getElementById('c-job').value = ''; document.getElementById('c-amount').value = ''; document.querySelector('input[value="0"]').checked = true; calcWHT(); }
+
+        window.editProject = function(id) { 
+            const p = appState.projects.find(x => x.id == id); 
+            document.getElementById('c-id').value = p.id; 
+            document.getElementById('c-date').value = p.date; 
+            document.getElementById('c-emp').value = p.emp_id; 
+            document.getElementById('c-job').value = p.job_name; 
+            document.getElementById('c-amount').value = p.amount; 
+            document.getElementById('c-pay-date').value = p.payment_date; 
+            const radios = document.getElementsByName('c-wht'); 
+            for(let r of radios) r.checked = (parseFloat(r.value) == p.wht_rate); 
+            calcWHT(); 
+            window.scrollTo({top:0,behavior:'smooth'});
+        }
+
+        window.delProject = async function(id) { 
+            const r = await Swal.fire({title:'ยืนยันลบ?', icon:'warning', showCancelButton:true});
+            if(r.isConfirmed) {
+                const { error } = await db.from('projects').delete().eq('id', id);
+                if(!error) {
+                    appState.projects = appState.projects.filter(x => x.id != id); 
+                    renderContractorList(); 
+                }
+            }
+        }
+
+        // ============================================================
+        // 10. LEDGER LOGIC
+        // ============================================================
+        window.renderLedgerPage = function() { 
+            const cats = (appState.settings.acc_income_cats + ',' + appState.settings.acc_expense_cats).split(',').filter(x=>x); 
+            const s = document.getElementById('l-cat'); s.innerHTML = '<option value="">-- เลือกหมวดหมู่ --</option>'; 
+            cats.forEach(c => s.innerHTML += `<option value="${c.trim()}">${c.trim()}</option>`); 
+            
+            const inc = appState.ledger.reduce((s,i)=>s+(i.income||0), 0); 
+            const exp = appState.ledger.reduce((s,i)=>s+(i.expense||0), 0); 
+            document.getElementById('ldg-balance').innerText = (inc - exp).toLocaleString(undefined, {minimumFractionDigits:2}); 
+            renderLedgerList(); 
+        }
+
+        window.saveLedger = async function() { 
+            const d = { 
+                id: document.getElementById('l-id').value || 'LDG-'+Date.now(), 
+                date: document.getElementById('l-date').value, 
+                description: document.getElementById('l-desc').value, 
+                category: document.getElementById('l-cat').value, 
+                income: parseFloat(document.getElementById('l-income').value) || 0, 
+                expense: parseFloat(document.getElementById('l-expense').value) || 0 
+            }; 
+            if(!d.date || !d.description) return Swal.fire('กรุณากรอกข้อมูล', '', 'warning'); 
+            
+            const { error } = await db.from('ledger').upsert(d);
+            if(!error) {
+                const idx = appState.ledger.findIndex(l => l.id == d.id); 
+                if(idx > -1) appState.ledger[idx] = d; else appState.ledger.push(d); 
+                resetLedgerForm(); renderLedgerPage(); 
+                Swal.fire('สำเร็จ','','success');
+            }
+        }
+
+        window.changeLedgerMonth = function(step) {
+            appState.nav.lMonth += step;
+            if(appState.nav.lMonth > 12) { appState.nav.lMonth = 1; appState.nav.lYear++; }
+            else if(appState.nav.lMonth < 1) { appState.nav.lMonth = 12; appState.nav.lYear--; }
+            renderLedgerList();
+        }
+
+        window.renderLedgerList = function() { 
+            const m = appState.nav.lMonth; const y = appState.nav.lYear;
+            const list = appState.ledger.filter(l => { const d = new Date(l.date); return d.getMonth()+1 === m && d.getFullYear() === y; }).sort((a,b) => new Date(b.date) - new Date(a.date));
+            
+            let sIn=0, sEx=0; 
+            document.getElementById('l-list').innerHTML = list.map(l => { 
+                sIn += l.income; sEx += l.expense; 
+                return `<tr class="hover:bg-slate-50 border-b"><td class="p-4 text-xs">${l.date}</td><td class="p-4 font-bold text-slate-700">${l.description}</td><td class="p-4 text-xs bg-slate-50 text-slate-500">${l.category||'-'}</td><td class="p-4 text-right text-green-600">${l.income>0 ? l.income.toLocaleString() : '-'}</td><td class="p-4 text-right text-red-500">${l.expense>0 ? l.expense.toLocaleString() : '-'}</td><td class="p-4 text-center flex justify-center gap-1"><button onclick="editLedger('${l.id}')" class="text-blue-500 hover:text-blue-700 mx-1"><i class="fa-solid fa-pen"></i></button><button onclick="delLedger('${l.id}')" class="text-red-400 hover:text-red-600 mx-1"><i class="fa-solid fa-trash"></i></button></td></tr>`; 
+            }).join(''); 
+            document.getElementById('ldg-sum-inc').innerText = sIn.toLocaleString(); 
+            document.getElementById('ldg-sum-exp').innerText = sEx.toLocaleString(); 
+        }
+
+        window.resetLedgerForm = function() { document.getElementById('l-id').value = ''; document.getElementById('l-desc').value = ''; document.getElementById('l-cat').value = ''; document.getElementById('l-income').value = ''; document.getElementById('l-expense').value = ''; }
+
+        window.editLedger = function(id) {
+            const l = appState.ledger.find(x => x.id == id);
+            document.getElementById('l-id').value = l.id;
+            document.getElementById('l-date').value = l.date;
+            document.getElementById('l-desc').value = l.description;
+            document.getElementById('l-cat').value = l.category;
+            document.getElementById('l-income').value = l.income > 0 ? l.income : '';
+            document.getElementById('l-expense').value = l.expense > 0 ? l.expense : '';
+            window.scrollTo({top:0,behavior:'smooth'});
+        }
+
+        window.delLedger = async function(id) { 
+            const r = await Swal.fire({title:'ลบรายการ?', icon:'warning', showCancelButton:true});
+            if(r.isConfirmed) {
+                const { error } = await db.from('ledger').delete().eq('id', id);
+                if(!error) {
+                    appState.ledger = appState.ledger.filter(x => x.id != id); 
+                    renderLedgerPage(); 
+                }
+            }
+        }
+
+        // ============================================================
+        // 11. REPORTS & SETTINGS LOGIC
+        // ============================================================
+        window.switchReportTab = function(tab, btn) { 
+            document.querySelectorAll('.rpt-tab-content').forEach(e => e.classList.add('hidden')); 
+            document.getElementById(`rpt-tab-${tab}`).classList.remove('hidden'); 
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); 
+            if(btn) btn.classList.add('active'); 
+            if(tab === 'contractor') { initYearSelect('rpt-c-year'); initMonthSelect('rpt-c-month'); } 
+            else if(tab === 'ledger') { initYearSelect('rpt-l-year'); initMonthSelect('rpt-l-month'); } 
+            else if(tab === 'trip') { initYearSelect('rpt-t-year'); initMonthSelect('rpt-t-month'); }
+        }
+
+        window.initYearSelect = function(id) { const el = document.getElementById(id); if(el.options.length < 2) { const y = new Date().getFullYear(); el.innerHTML = `<option value="${y}">${y}</option><option value="${y-1}">${y-1}</option>`; } }
+        window.initMonthSelect = function(id) { const el = document.getElementById(id); if(el.options.length < 2) { const mArr = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."]; if(id==='rpt-l-month') el.innerHTML = '<option value="all">-- ทั้งปี --</option>'; else el.innerHTML = ''; mArr.forEach((m,i) => el.innerHTML += `<option value="${i+1}">${m}</option>`); } }
+
+        window.filterReport = function() { 
+            const m = parseInt(document.getElementById('rpt-month').value); const y = parseInt(document.getElementById('rpt-year').value); const p = document.getElementById('rpt-period').value; 
+            filteredReportData = appState.history.filter(h => h.month === m && h.year === y && (p === 'all' || h.period == p)); 
+            const monthNames = ["", "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."]; 
+            document.getElementById('rpt-list').innerHTML = filteredReportData.map(h => { 
+                const income = h.salary + h.incentive + h.other; const deduct = h.sso + h.tax + h.advance + h.water + h.electricity; 
+                return `<tr class="hover:bg-slate-50 border-b"><td class="p-4 text-center"><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-bold">${h.period}</span></td><td class="p-4 text-center">${monthNames[h.month]}</td><td class="p-4 text-center">${h.year}</td><td class="p-4 font-mono text-xs">${h.emp_id}</td><td class="p-4 font-bold text-slate-700">${h.name}</td><td class="p-4 text-slate-600">${h.pos}</td><td class="p-4 text-right">${h.salary.toLocaleString()}</td><td class="p-4 text-right">${h.incentive.toLocaleString()}</td><td class="p-4 text-right">${h.other.toLocaleString()}</td><td class="p-4 text-right text-green-600 font-bold">${income.toLocaleString()}</td><td class="p-4 text-right">${h.sso.toLocaleString()}</td><td class="p-4 text-right">${h.tax.toLocaleString()}</td><td class="p-4 text-right">${h.advance.toLocaleString()}</td><td class="p-4 text-right">${h.water.toLocaleString()}</td><td class="p-4 text-right">${h.electricity.toLocaleString()}</td><td class="p-4 text-right text-red-500 font-bold">${deduct.toLocaleString()}</td><td class="p-4 text-right font-bold text-slate-800 text-lg">${h.net.toLocaleString()}</td></tr>`; 
+            }).join(''); 
+            document.getElementById('export-buttons-area').style.display = filteredReportData.length ? 'flex' : 'none'; 
+        }
+
+        window.filterContractorReport = function() { 
+            const m = parseInt(document.getElementById('rpt-c-month').value); const y = parseInt(document.getElementById('rpt-c-year').value); 
+            const list = appState.projects.filter(p => { const d = new Date(p.date); return d.getMonth()+1 === m && d.getFullYear() === y; }); 
+            document.getElementById('rpt-c-list').innerHTML = list.map(p => { const emp = appState.employees.find(e => e.id == p.emp_id) || {fname:'Unknown', lname:''}; return `<tr class="hover:bg-slate-50 border-b"><td class="p-4 text-xs">${p.date}</td><td class="p-4"><div class="font-bold text-slate-700">${emp.fname} ${emp.lname}</div><div class="text-xs text-slate-500">${p.job_name}</div></td><td class="p-4 text-right">${p.amount.toLocaleString()}</td><td class="p-4 text-right text-red-500">${p.tax.toLocaleString()}</td><td class="p-4 text-right font-bold text-green-700">${p.net.toLocaleString()}</td><td class="p-4 text-center"><button onclick="printPaymentVoucher('${p.id}')" class="bg-slate-800 text-white px-3 py-1 rounded text-xs">พิมพ์</button></td></tr>`; }).join(''); 
+        }
+
+        window.filterLedgerReport = function() { 
+            const mVal = document.getElementById('rpt-l-month').value; const y = parseInt(document.getElementById('rpt-l-year').value); 
+            const list = appState.ledger.filter(l => { const d = new Date(l.date); return (mVal === 'all' || d.getMonth()+1 == mVal) && d.getFullYear() === y; }); 
+            const inc = list.reduce((s,i)=>s+(i.income||0),0); const exp = list.reduce((s,i)=>s+(i.expense||0),0); 
+            document.getElementById('rs-inc').innerText = inc.toLocaleString(); document.getElementById('rs-exp').innerText = exp.toLocaleString(); document.getElementById('rs-net').innerText = (inc - exp).toLocaleString(); 
+            document.getElementById('rpt-l-summary').classList.remove('hidden'); document.getElementById('btn-print-ledger').classList.remove('hidden'); 
+            document.getElementById('rpt-l-list').innerHTML = list.map(l => `<tr class="hover:bg-slate-50 border-b"><td class="p-4 text-xs">${l.date}</td><td class="p-4 font-bold text-slate-700">${l.description}</td><td class="p-4 text-xs text-slate-500">${l.category}</td><td class="p-4 text-right text-green-600">${l.income?l.income.toLocaleString():'-'}</td><td class="p-4 text-right text-red-500">${l.expense?l.expense.toLocaleString():'-'}</td></tr>`).join(''); 
+            appState.filteredLedger = list; appState.ledgerSummary = { inc, exp, net: inc-exp, label: mVal === 'all' ? `ประจำปี ${y}` : `ประจำเดือน ${mVal}/${y}` }; 
+        }
+
+        window.filterTripReport = function() {
+            const m = parseInt(document.getElementById('rpt-t-month').value);
+            const y = parseInt(document.getElementById('rpt-t-year').value);
+            const p = parseInt(document.getElementById('rpt-t-period').value);
+            const type = document.querySelector('input[name="rpt-t-type"]:checked').value;
+            
+            // 1. Determine Date Range
+            let startDate = 1, endDate = 15;
+            let lastDayOfMonth = new Date(y, m, 0).getDate();
+            if (p === 2) { startDate = 16; endDate = lastDayOfMonth; }
+            
+            // 2. Filter Employees
+            let emps = appState.employees.filter(e => e.status !== 'Resigned');
+            
+            // Filter Logic
+            if (type === 'All') {
+                emps = emps.filter(e => e.pos && (e.pos.includes('แม็คโคร') || e.pos.includes('Macro') || e.pos.includes('สิบล้อ') || e.pos.includes('Truck')));
+            }
+            else if (type === 'Macro') emps = emps.filter(e => e.pos && (e.pos.includes('แม็คโคร') || e.pos.includes('Macro')));
+            else if (type === 'Truck') emps = emps.filter(e => e.pos && (e.pos.includes('สิบล้อ') || e.pos.includes('Truck')));
+            
+            // 3. Build Table Header
+            let headerHTML = `<th class="p-2 border bg-slate-100 text-left min-w-[150px]">ชื่อพนักงาน</th>`;
+            for(let d = startDate; d <= endDate; d++) {
+                headerHTML += `<th class="p-2 border bg-slate-100 text-center w-10 text-xs">${d}</th>`;
+            }
+            headerHTML += `<th class="p-2 border bg-green-50 text-center w-16 text-xs font-bold">รวม</th>`;
+            
+            // 4. Build Table Body
+            let bodyHTML = '';
+            let dailyTotals = {}; 
+            for(let d = startDate; d <= endDate; d++) dailyTotals[d] = 0;
+            
+            emps.forEach(emp => {
+                let rowHTML = `<td class="p-2 border text-sm font-bold text-slate-700 truncate">${emp.prefix} ${emp.fname} ${emp.lname} <span class="text-[10px] text-slate-400 block font-normal">${emp.pos}</span></td>`;
+                let empTotal = 0;
+                
+                for(let d = startDate; d <= endDate; d++) {
+                    const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    const rec = appState.dailyRecords.find(r => r.emp_id == emp.id && r.date === dateStr);
+                    
+                    if(rec && rec.trip_count > 0) {
+                        rowHTML += `<td class="p-2 border text-center text-sm font-bold">${rec.trip_count}</td>`;
+                        empTotal += rec.trip_count;
+                        dailyTotals[d] += rec.trip_count;
+                    } else {
+                        rowHTML += `<td class="p-2 border text-center"><span class="text-[10px] text-red-500 font-bold">หยุด</span></td>`;
+                    }
+                }
+                rowHTML += `<td class="p-2 border text-center font-bold text-blue-600 bg-blue-50">${empTotal}</td>`;
+                bodyHTML += `<tr>${rowHTML}</tr>`;
+            });
+            
+            // 5. Build Footer (Grand Total)
+            let footerHTML = `<td class="p-2 border bg-slate-200 font-bold text-right text-xs">รวมรายวัน</td>`;
+            let grandTotal = 0;
+            for(let d = startDate; d <= endDate; d++) {
+                footerHTML += `<td class="p-2 border bg-slate-200 text-center font-bold text-xs">${dailyTotals[d]}</td>`;
+                grandTotal += dailyTotals[d];
+            }
+            footerHTML += `<td class="p-2 border bg-slate-800 text-white text-center font-bold text-sm">${grandTotal.toLocaleString()}</td>`;
+            
+            const monthNames = ["", "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+            const tableHTML = `
+                <div class="text-center mb-4">
+                    <h3 class="text-lg font-bold">สรุปจำนวนเที่ยวรายวัน (${type === 'All' ? 'เฉพาะ แม็คโคร/สิบล้อ' : (type === 'Macro' ? 'แม็คโคร' : 'สิบล้อ')})</h3>
+                    <p class="text-sm text-slate-500">ประจำเดือน ${monthNames[m]} ${y} (งวดที่ ${p})</p>
+                </div>
+                <table class="w-full border-collapse">
+                    <thead><tr>${headerHTML}</tr></thead>
+                    <tbody>${bodyHTML}</tbody>
+                    <tfoot><tr>${footerHTML}</tr></tfoot>
+                </table>
+            `;
+            
+            document.getElementById('trip-report-container').innerHTML = tableHTML;
+            document.getElementById('trip-export-area').classList.remove('hidden');
+        }
+
+        window.generateSlipHTML = function(data) {
+             const income = data.salary + data.incentive + data.other;
+             const deduct = data.sso + data.tax + data.advance + data.water + data.electricity;
+             // Store current data for Single Slip Print
+             window.currentSlipData = data;
+
+             const html = `
+             <div class="bg-white p-8 max-w-[800px] mx-auto text-slate-800" style="font-family: 'Prompt', sans-serif;">
+                <div class="flex justify-between items-start mb-6 border-b pb-4">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-slate-800 rounded-lg flex items-center justify-center text-white text-xl mr-4"><i class="fa-solid fa-building"></i></div>
+                        <div>
+                            <h2 class="text-xl font-bold">${appState.settings.company_name}</h2>
+                            <p class="text-xs text-slate-500 mt-1 max-w-[250px]">${appState.settings.company_address}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm font-bold bg-slate-100 px-3 py-1 rounded-lg inline-block mb-1">PAYSLIP / ใบแจ้งเงินเดือน</div>
+                        <div class="text-xs text-slate-500">งวดที่ ${data.period} ประจำเดือน ${data.month}/${data.year}</div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-6 text-sm">
+                    <div><span class="text-slate-400 block text-xs">พนักงาน</span><span class="font-bold text-lg">${data.name}</span></div>
+                    <div class="text-right"><span class="text-slate-400 block text-xs">ตำแหน่ง</span><span class="font-bold">${data.pos}</span></div>
+                </div>
+                <div class="grid grid-cols-2 gap-8 mb-6">
+                    <div>
+                        <div class="font-bold text-green-700 border-b border-green-100 pb-2 mb-2">รายได้ (Income)</div>
+                        <div class="flex justify-between text-sm mb-1"><span>เงินเดือน</span><span>${data.salary.toLocaleString()}</span></div>
+                        <div class="flex justify-between text-sm mb-1"><span>ค่าล่วงเวลา/เบี้ยเลี้ยง</span><span>${data.incentive.toLocaleString()}</span></div>
+                        <div class="flex justify-between text-sm mb-1"><span>อื่นๆ</span><span>${data.other.toLocaleString()}</span></div>
+                        <div class="flex justify-between text-sm mt-2 pt-2 border-t font-bold"><span>รวมรายได้</span><span>${income.toLocaleString()}</span></div>
+                    </div>
+                    <div>
+                        <div class="font-bold text-red-700 border-b border-red-100 pb-2 mb-2">รายการหัก (Deduction)</div>
+                        <div class="flex justify-between text-sm mb-1"><span>ประกันสังคม</span><span>${data.sso.toLocaleString()}</span></div>
+                        <div class="flex justify-between text-sm mb-1"><span>ภาษี</span><span>${data.tax.toLocaleString()}</span></div>
+                        <div class="flex justify-between text-sm mb-1"><span>เบิกล่วงหน้า</span><span>${data.advance.toLocaleString()}</span></div>
+                        <div class="flex justify-between text-sm mb-1"><span>ค่าน้ำ/ไฟ</span><span>${(data.water+data.electricity).toLocaleString()}</span></div>
+                        <div class="flex justify-between text-sm mt-2 pt-2 border-t font-bold"><span>รวมหัก</span><span>${deduct.toLocaleString()}</span></div>
+                    </div>
+                </div>
+                <div class="bg-slate-50 rounded-xl p-4 flex justify-between items-center border border-slate-200">
+                    <div class="text-xs text-slate-500">โอนเข้าบัญชี: ${data.bank}<br>วันที่จ่าย: ${new Date().toLocaleDateString('th-TH')}</div>
+                    <div class="text-right">
+                        <div class="text-xs text-slate-400 uppercase font-bold">Net Pay</div>
+                        <div class="text-3xl font-bold text-slate-800">${data.net.toLocaleString()} <span class="text-sm font-normal text-slate-500">THB</span></div>
+                    </div>
+                </div>
+             </div>`;
+             document.getElementById('payslip-content').innerHTML = html;
+        }
+
+        window.saveSettings = async function(e) { 
+            e.preventDefault(); 
+            const updates = [
+                {key:'company_name', value: document.getElementById('set-company').value},
+                {key:'tax_id', value: document.getElementById('set-tax').value},
+                {key:'company_address', value: document.getElementById('set-address').value},
+                {key:'acc_income_cats', value: document.getElementById('set-inc-cat').value},
+                {key:'acc_expense_cats', value: document.getElementById('set-exp-cat').value},
+                {key:'income_categories', value: document.getElementById('set-emp-inc-cat').value},
+                {key:'trip_threshold', value: document.getElementById('set-trip').value},
+                {key:'sso_rate', value: document.getElementById('set-sso').value},
+                {key:'sso_max', value: document.getElementById('set-sso-max').value}
+            ];
+            
+            Swal.fire({title:'กำลังบันทึก...', didOpen: () => Swal.showLoading()});
+            
+            const { error } = await db.from('settings').upsert(updates);
+            
+            if(!error) {
+                updates.forEach(u => appState.settings[u.key] = u.value);
+                renderOtherIncomeInputs(); renderLedgerPage();
+                Swal.fire('บันทึกเรียบร้อย','','success'); 
+            }
+        }
+    </script>
+</body>
+</html>
+
+
