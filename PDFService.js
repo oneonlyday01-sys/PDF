@@ -68,16 +68,7 @@ export const generateSalarySlipPDF = async (data) => {
         return false;
     }
 };
-```
 
----
-
-#### 2. แก้ไขไฟล์ `index.html` (แก้ปัญหา checkPin)
-ให้เข้าไปแก้ไขไฟล์ `index.html` ตรงส่วนที่เป็น `<script>` ด้านล่างสุด (ที่อยู่ก่อนปิด `</body>`)
-
-ให้เปลี่ยน **วิธีประกาศฟังก์ชัน checkPin** ให้เป็นแบบ `window.checkPin` เพื่อให้ปุ่มกดรู้จักครับ
-
-**หาโค้ดส่วนนี้ (ด้านล่างๆ ของไฟล์ index.html):**
 ```html
 <script type="module">
     import { generateSalarySlipPDF } from './PDFService.js';
@@ -154,3 +145,4 @@ export const generateSalarySlipPDF = async (data) => {
         }
     </script>
 </body>
+
