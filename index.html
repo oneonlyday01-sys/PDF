@@ -18,9 +18,14 @@
     <!-- 1. โหลดเครื่องยนต์สร้าง PDF (jsPDF) *จำเป็นต้องมี* -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-    <!-- 2. โหลดไฟล์โปรแกรมของคุณ (ใช้ type="module" เพราะในไฟล์มีคำว่า export) -->
+    <!-- 2. โหลดไฟล์โปรแกรมของคุณ -->
     <script type="module" src="./src/fonts/SarabunNew.js"></script>
-    <script type="module" src="./PDFService.js"></script>
+    
+    <!-- *** แก้ไขจุดสำคัญ: เพิ่ม type="module" และ import แบบมีชื่อเพื่อให้เรียกใช้ได้ *** -->
+    <script type="module">
+        import * as PDFService from './PDFService.js';
+        window.PDFService = PDFService; // ผูกเข้ากับ window เพื่อให้ปุ่ม HTML เรียกใช้ได้
+    </script>
 
     <style>
         body { background-color: #f8fafc; color: #1e293b; font-family: 'Prompt', sans-serif; }
@@ -609,10 +614,7 @@
     <div id="pdf-report-container" style="display: none;"></div>
     <div id="trip-print-container" style="display: none;"></div>
 
-    <script type="module">
-        // Import the new PDF Service
-        import PDFService from './PDFService.js';
-
+    <script>
         // Make functions available globally for HTML onclick attributes
         window.printTripReport = () => {
             const m = parseInt(document.getElementById('rpt-t-month').value);
@@ -642,10 +644,6 @@
             emps.forEach(emp => {
                 let row = [`${emp.prefix}${emp.fname} ${emp.lname}`];
                 let empTotal = 0;
-                
-                // Days 1-15 columns (or whatever range)
-                // Note: The PDF Service expects columns 1-15 fixed. 
-                // We need to map the specific days of this period to those columns.
                 
                 let dayColIndex = 0;
                 for(let d = startDate; d <= endDate; d++) {
@@ -692,7 +690,8 @@
                  water: d.water,
                  electricity: d.electricity,
                  net: d.net,
-                 totalDeduction: d.sso + d.tax + d.advance + d.water + d.electricity
+                 totalDeduction: d.sso + d.tax + d.advance + d.water + d.electricity,
+                 bank: d.bank // เพิ่ม bank
              }));
              PDFService.generatePayslip(dataForPdf);
         };
@@ -1881,8 +1880,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
