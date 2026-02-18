@@ -62,7 +62,7 @@
             <h2 class="text-2xl font-bold text-slate-800 mb-2">ระบบเงินเดือน N.O.K.</h2>
             <p class="text-slate-500 mb-6 text-sm">กรุณากรอกรหัสผ่านทีมเพื่อเข้าใช้งาน</p>
             <input type="password" id="team-pin" class="form-control text-center text-2xl tracking-widest font-bold mb-4" placeholder="••••" maxlength="4" inputmode="numeric">
-            <button onclick="checkPin()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition">เข้าใช้งาน</button>
+            <button onclick="window.checkPin = function()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition">เข้าใช้งาน</button>
             <p id="login-error" class="text-red-500 text-xs mt-3 hidden">รหัสผ่านไม่ถูกต้อง</p>
         </div>
     </div>
@@ -1881,6 +1881,7 @@
     </script>
 </body>
 </html>
+
 
 
 
