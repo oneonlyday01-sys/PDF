@@ -12,6 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Note: html2pdf.js is removed/deprecated as we use PDFService now -->
     <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1853,6 +1854,84 @@
              document.getElementById('payslip-content').innerHTML = html;
         }
 
+         // ==========================================
+// ฟังก์ชันส่งออก Excel (เพิ่มใหม่)
+// ==========================================
+window.exportToExcel = function() {
+    // 1. ตรวจสอบข้อมูล
+    if(!filteredReportData || filteredReportData.length === 0) {
+        return Swal.fire('ไม่มีข้อมูล', 'กรุณากดปุ่ม "ค้นหา" เพื่อดึงข้อมูลก่อนส่งออกครับ', 'warning');
+    }
+
+    // 2. ดึงข้อมูลส่วนหัว (บริษัท, ที่อยู่, ฯลฯ) จากการตั้งค่า
+    const settings = appState.settings || {};
+    const companyName = settings.company_name || 'บริษัท (ไม่ได้ระบุชื่อ)';
+    const address = settings.company_address || '';
+    const taxId = settings.tax_id ? `เลขประจำตัวผู้เสียภาษี: ${settings.tax_id}` : '';
+
+    // 3. ดึงข้อมูลงวด/เดือน/ปี ที่เลือกอยู่หน้าเว็บ
+    const mSelect = document.getElementById('rpt-month');
+    const monthText = mSelect.options[mSelect.selectedIndex].text;
+    const yearText = document.getElementById('rpt-year').value;
+    const periodVal = document.getElementById('rpt-period').value;
+    const periodText = periodVal === 'all' ? 'รวมทั้งเดือน' : `งวดที่ ${periodVal}`;
+
+    const reportTitle = `รายงานสรุปเงินเดือน ประจำเดือน ${monthText} ปี ${yearText} (${periodText})`;
+
+    // 4. สร้างโครงสร้างข้อมูลสำหรับ Excel (Array of Arrays)
+    const wsData = [
+        [companyName],           // แถว 1: ชื่อบริษัท
+        [address],               // แถว 2: ที่อยู่
+        [taxId],                 // แถว 3: เลขภาษี
+        [],                      // แถว 4: เว้นว่าง
+        [reportTitle],           // แถว 5: หัวข้อรายงาน
+        [],                      // แถว 6: เว้นว่าง
+        // แถว 7: หัวตาราง (Header Columns)
+        ['งวด', 'เดือน', 'ปี', 'รหัสพนักงาน', 'ชื่อ-นามสกุล', 'ตำแหน่ง', 'เงินเดือน', 'ค่าตอบแทน', 'รายได้อื่นๆ', 'รวมรับ', 'ประกันสังคม', 'ภาษี', 'เบิกล่วงหน้า', 'ค่าน้ำ', 'ค่าไฟ', 'รวมหัก', 'ยอดสุทธิ', 'ธนาคาร']
+    ];
+
+    // 5. วนลูปเอาข้อมูลพนักงานใส่เข้าไปทีละแถว
+    filteredReportData.forEach(item => {
+        const income = item.salary + item.incentive + item.other;
+        const deduct = item.sso + item.tax + item.advance + item.water + item.electricity;
+        
+        wsData.push([
+            item.period,                // งวด
+            monthText,                  // เดือน (ใช้ชื่อเดือนแทนตัวเลข)
+            item.year,                  // ปี
+            item.emp_id,                // รหัส
+            item.name,                  // ชื่อ
+            item.pos,                   // ตำแหน่ง
+            item.salary,                // เงินเดือน
+            item.incentive,             // ค่าตอบแทน
+            item.other,                 // อื่นๆ
+            income,                     // รวมรับ
+            item.sso,                   // ประกันสังคม
+            item.tax,                   // ภาษี
+            item.advance,               // เบิก
+            item.water,                 // น้ำ
+            item.electricity,           // ไฟ
+            deduct,                     // รวมหัก
+            item.net,                   // สุทธิ
+            item.bank || '-'            // ธนาคาร
+        ]);
+    });
+
+    // 6. สร้าง Workbook และ Worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // (Optional) จัดความกว้างคอลัมน์ให้สวยงาม (หน่วยเป็นตัวอักษร)
+    ws['!cols'] = [
+        {wch: 5}, {wch: 10}, {wch: 6}, {wch: 12}, {wch: 25}, {wch: 20}, 
+        {wch: 12}, {wch: 12}, {wch: 12}, {wch: 15}, 
+        {wch: 12}, {wch: 10}, {wch: 12}, {wch: 10}, {wch: 10}, {wch: 15}, {wch: 15}, {wch: 20}
+    ];
+
+    // 7. รวมร่างและดาวน์โหลดไฟล์
+    XLSX.utils.book_append_sheet(wb, ws, "Payroll_Report");
+    XLSX.writeFile(wb, `Salary_Report_${yearText}_${monthText}.xlsx`);
+};
         window.saveSettings = async function(e) { 
             e.preventDefault(); 
             const updates = [
@@ -1880,3 +1959,4 @@
     </script>
 </body>
 </html>
+
