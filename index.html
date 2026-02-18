@@ -15,6 +15,12 @@
     <!-- Note: html2pdf.js is removed/deprecated as we use PDFService now -->
     <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- 1. โหลดเครื่องยนต์สร้าง PDF (jsPDF) *จำเป็นต้องมี* -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- 2. โหลดไฟล์โปรแกรมของคุณ (ใช้ type="module" เพราะในไฟล์มีคำว่า export) -->
+    <script type="module" src="./src/fonts/SarabunNew.js"></script>
+    <script type="module" src="./PDFService.js"></script>
 
     <style>
         body { background-color: #f8fafc; color: #1e293b; font-family: 'Prompt', sans-serif; }
@@ -605,7 +611,7 @@
 
     <script type="module">
         // Import the new PDF Service
-        import PDFService from './src/services/PDFService.js';
+        import PDFService from 'PDFService.js';
 
         // Make functions available globally for HTML onclick attributes
         window.printTripReport = () => {
@@ -1875,5 +1881,6 @@
     </script>
 </body>
 </html>
+
 
 
