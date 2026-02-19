@@ -209,10 +209,11 @@ export const generateSalarySummary = async (dataArray) => {
             if (y > 190) { 
                 doc.addPage();
                 y = 20;
+                doc.setDrawColor(0, 0, 0);
+                doc.setLineWidth(0.1);
             }
 
             currentX = startX;
-            doc.setFillColor(255, 255, 255); // พื้นหลังสีขาวสำหรับช่องข้อมูลทั้งหมด
 
             for (let i = 0; i < 16; i++) {
                 let textVal = row[i];
@@ -225,7 +226,7 @@ export const generateSalarySummary = async (dataArray) => {
                     textVal = num.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0});
                 }
 
-                doc.rect(currentX, y, colW[i], 8, 'FD');
+                doc.rect(currentX, y, colW[i], 8, 'S');
                 
                 if (i >= 6) {
                     doc.text(String(textVal), currentX + colW[i] - 2, y + 5.5, { align: "right" });
@@ -407,14 +408,18 @@ export const generateTripReport = async (pdfData, type, monthLabel) => {
         let y = startY + 10;
         
         pdfData.forEach(row => {
+            if (y > 180) {
+                doc.addPage();
+                y = 20;
+                doc.setDrawColor(0, 0, 0);
+                doc.setLineWidth(0.1);
+            }
+
             const name = row[0];
             const total = row[row.length - 1];
 
-            // เซ็ตพื้นหลังเนื้อหาตารางเป็น "สีขาว" ทั้งหมด
-            doc.setFillColor(255, 255, 255);
-
             // ชื่อ
-            doc.rect(startX, y, nameWidth, 10, 'FD');
+            doc.rect(startX, y, nameWidth, 10, 'S');
             doc.text(name, startX + 2, y + 6.5);
 
             // วันที่ 1-15
@@ -422,7 +427,7 @@ export const generateTripReport = async (pdfData, type, monthLabel) => {
                 let x = startX + nameWidth + ((i - 1) * cellWidth);
                 let val = row[i] || "-";
                 
-                doc.rect(x, y, cellWidth, 10, 'FD');
+                doc.rect(x, y, cellWidth, 10, 'S');
                 
                 if(String(val).includes("หยุด")) {
                      doc.setTextColor(255, 0, 0); // คำว่าหยุด สีแดง
@@ -434,14 +439,10 @@ export const generateTripReport = async (pdfData, type, monthLabel) => {
             }
 
             // รวม
-            doc.rect(totalX, y, totalW, 10, 'FD');
+            doc.rect(totalX, y, totalW, 10, 'S');
             doc.text(String(total), totalX + totalW/2, y + 6.5, { align: "center" });
 
             y += 10;
-            if (y > 180) {
-                doc.addPage();
-                y = 20;
-            }
         });
 
         doc.save(`TripReport_${new Date().getTime()}.pdf`);
@@ -462,9 +463,8 @@ export const generateLedger = async (summary, list) => {
         doc.setFontSize(14);
         doc.text(summary.label, 105, 28, { align: "center" });
 
-        doc.setDrawColor(0);
-        doc.setFillColor(255, 255, 255);
-        doc.rect(20, 35, 170, 20, 'FD');
+        doc.setDrawColor(0, 0, 0);
+        doc.rect(20, 35, 170, 20, 'S');
         doc.setFontSize(12);
         doc.text(`รายรับรวม: ${summary.inc.toLocaleString()}`, 30, 48);
         doc.text(`รายจ่ายรวม: ${summary.exp.toLocaleString()}`, 90, 48);
@@ -495,28 +495,29 @@ export const generateLedger = async (summary, list) => {
             if (y > 270) {
                 doc.addPage();
                 y = 20;
+                doc.setDrawColor(0, 0, 0);
+                doc.setLineWidth(0.1);
             }
 
             currentX = 20;
-            doc.setFillColor(255, 255, 255); // พื้นหลังขาวตามที่ขอ
 
             // วันที่
-            doc.rect(currentX, y, colW[0], 10, 'FD');
+            doc.rect(currentX, y, colW[0], 10, 'S');
             doc.text(item.date, currentX + colW[0]/2, y + 7, { align: "center" });
             currentX += colW[0];
 
             // หมวดหมู่
-            doc.rect(currentX, y, colW[1], 10, 'FD');
+            doc.rect(currentX, y, colW[1], 10, 'S');
             doc.text(item.category || "-", currentX + colW[1]/2, y + 7, { align: "center" });
             currentX += colW[1];
 
             // รายการ
-            doc.rect(currentX, y, colW[2], 10, 'FD');
+            doc.rect(currentX, y, colW[2], 10, 'S');
             doc.text(item.description.substring(0, 30), currentX + 2, y + 7);
             currentX += colW[2];
 
             // รับ (ตัวเลขสีเขียว)
-            doc.rect(currentX, y, colW[3], 10, 'FD');
+            doc.rect(currentX, y, colW[3], 10, 'S');
             if(item.income > 0) {
                 doc.setTextColor(0, 128, 0);
                 doc.text(item.income.toLocaleString(), currentX + colW[3] - 2, y + 7, { align: "right" });
@@ -527,7 +528,7 @@ export const generateLedger = async (summary, list) => {
             currentX += colW[3];
 
             // จ่าย (ตัวเลขสีแดง)
-            doc.rect(currentX, y, colW[4], 10, 'FD');
+            doc.rect(currentX, y, colW[4], 10, 'S');
             if(item.expense > 0) {
                 doc.setTextColor(255, 0, 0);
                 doc.text(item.expense.toLocaleString(), currentX + colW[4] - 2, y + 7, { align: "right" });
