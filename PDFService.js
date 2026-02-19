@@ -382,17 +382,18 @@ export const generateTripReport = async (pdfData, type, monthLabel) => {
         
         doc.setFontSize(10);
         doc.setLineWidth(0.1);
-        doc.setDrawColor(0, 0, 0);
 
         // --- หัวตาราง (ลงสีตามโซนที่ระบุ) ---
         // 1. ชื่อพนักงาน (สีส้มอ่อน)
+        doc.setDrawColor(0, 0, 0);
         doc.setFillColor(255, 220, 180); 
         doc.rect(startX, startY, nameWidth, 10, 'FD');
         doc.text("ชื่อพนักงาน", startX + nameWidth/2, startY + 6.5, { align: "center" });
 
-        // 2. วันที่ 1-15 (สีเขียวอ่อน)
-        doc.setFillColor(200, 240, 200);
+        // 2. วันที่ 1-15 (สีเขียวอ่อน) - [แก้บั๊กโดยการย้าย setFillColor เข้ามาในลูป]
         for (let i = 1; i <= 15; i++) {
+            doc.setDrawColor(0, 0, 0);
+            doc.setFillColor(200, 240, 200); 
             let x = startX + nameWidth + ((i - 1) * cellWidth);
             doc.rect(x, startY, cellWidth, 10, 'FD');
             doc.text(`${i}`, x + cellWidth/2, startY + 6.5, { align: "center" });
@@ -400,6 +401,7 @@ export const generateTripReport = async (pdfData, type, monthLabel) => {
         
         // 3. รวม (สีฟ้า)
         let totalX = startX + nameWidth + (15 * cellWidth);
+        doc.setDrawColor(0, 0, 0);
         doc.setFillColor(180, 220, 255);
         doc.rect(totalX, startY, totalW, 10, 'FD');
         doc.text("รวม", totalX + totalW/2, startY + 6.5, { align: "center" });
@@ -475,12 +477,14 @@ export const generateLedger = async (summary, list) => {
         const colW = [25, 35, 60, 25, 25];
         const headers = ["วันที่", "หมวดหมู่", "รายการ", "รับ", "จ่าย"];
         
-        doc.setFillColor(230, 230, 230); // สีเทาอ่อน (ให้อ่านตัวหนังสือออก)
         doc.setLineWidth(0.1);
         doc.setTextColor(0, 0, 0); // ตัวหนังสือดำ
         
         let currentX = 20;
+        // [แก้บั๊กโดยการย้าย setFillColor เข้ามาในลูป]
         for(let i=0; i<5; i++) {
+            doc.setDrawColor(0, 0, 0);
+            doc.setFillColor(230, 230, 230); // สีเทาอ่อน ย้ำในลูปทุกรอบ
             doc.rect(currentX, y, colW[i], 10, 'FD');
             let align = i >= 3 ? "right" : "center";
             let xText = i >= 3 ? currentX + colW[i] - 5 : currentX + colW[i]/2;
