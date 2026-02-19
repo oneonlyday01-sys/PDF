@@ -1,6 +1,5 @@
 // ==========================================
 // File: PDFService.js
-// Version: 4.0 (Full UI Rewrite - Matched with index.html structure)
 // ==========================================
 
 // 1. นำเข้าฟอนต์จากไฟล์
@@ -65,7 +64,7 @@ const bahtText = (num) => {
 };
 
 // ==========================================
-// 1. ฟังก์ชันสร้างสลิปเงินเดือน (1 หน้า A4 มี 2 สลิป + ไม่มีกรอบล่าง)
+// 1. ฟังก์ชันสร้างสลิปเงินเดือน (1 หน้า A4 มี 2 สลิป + ลบกรอบล่าง)
 // ==========================================
 export const generatePayslip = async (dataArray) => {
     try {
@@ -80,13 +79,13 @@ export const generatePayslip = async (dataArray) => {
                 doc.addPage();
             }
 
-            // วาดเส้นปะแบ่งครึ่งหน้ากระดาษ (เฉพาะตอนวาดสลิปล่าง)
+            // วาดเส้นปะแบ่งครึ่งหน้ากระดาษ
             if (isBottom) {
                 doc.setLineDash([3, 3], 0);
                 doc.setDrawColor(150, 150, 150);
                 doc.line(10, 148.5, 200, 148.5);
-                doc.setLineDash([]); // รีเซ็ตเส้นทึบ
-                doc.setDrawColor(0, 0, 0); // รีเซ็ตสีดำ
+                doc.setLineDash([]); 
+                doc.setDrawColor(0, 0, 0); 
             }
 
             // --- หัวสลิป ---
@@ -149,13 +148,12 @@ export const generatePayslip = async (dataArray) => {
             doc.text(`เงินได้สุทธิ (Net Pay):`, 120, yPos + 50);
             doc.text(`${Number(data.net).toLocaleString()} บาท`, 190, yPos + 50, { align: "right" });
             
-            // --- ส่วนข้อมูลธนาคารและหมายเหตุ (ลบกรอบสี่เหลี่ยมออก) ---
+            // --- ส่วนข้อมูลธนาคารและหมายเหตุ (ไม่มีกรอบสี่เหลี่ยมแล้ว) ---
             doc.setFontSize(10);
             doc.setTextColor(80, 80, 80);
-            // ข้อความลอยๆ ไม่มีกรอบ
-            doc.text(`โอนเข้าบัญชี: ${data.bank || '-'}`, 20, yPos + 65);
-            doc.text(`หมายเหตุ: เอกสารนี้สร้างจากระบบอัตโนมัติ`, 20, yPos + 72);
-            doc.setTextColor(0, 0, 0); // รีเซ็ตสีข้อความกลับเป็นสีดำ
+            doc.text(`โอนเข้าบัญชี: ${data.bank || '-'}`, 25, yPos + 65);
+            doc.text(`หมายเหตุ: เอกสารนี้สร้างจากระบบอัตโนมัติ`, 25, yPos + 72);
+            doc.setTextColor(0, 0, 0); // รีเซ็ตสีดำ
         });
 
         const fileName = dataArray.length === 1 ? `Payslip_${dataArray[0].name}.pdf` : `Payslip_Batch_${new Date().getTime()}.pdf`;
@@ -169,7 +167,7 @@ export const generatePayslip = async (dataArray) => {
 };
 
 // ==========================================
-// 2. ฟังก์ชันสร้างรายงานสรุปเงินเดือน (ตรงตามข้อมูล 12 คอลัมน์ที่ส่งจากหน้าเว็บ)
+// 2. ฟังก์ชันสร้างรายงานสรุปเงินเดือน (แนวนอน ละเอียด แยกสีตามกลุ่ม)
 // ==========================================
 export const generateSalarySummary = async (dataArray) => {
     try {
@@ -184,13 +182,10 @@ export const generateSalarySummary = async (dataArray) => {
         doc.text(companyName, 148.5, 22, { align: "center" });
         doc.text(monthYearLabel, 148.5, 29, { align: "center" });
 
-        // ตั้งค่า 12 คอลัมน์ตามที่ index.html ส่งมา
         let startX = 10;
         let y = 35;
-        // ความกว้างรวมต้องไม่เกิน 277mm
-        // [งวด, เดือน, ปี, รหัส, ชื่อ, ตำแหน่ง, เงินเดือน, ค่าตอบแทน, อื่นๆ, รวมรับ, รวมหัก, สุทธิ]
-        const colW = [12, 15, 15, 20, 45, 30, 25, 25, 20, 25, 20, 25]; 
-        const headers = ["งวดที่", "เดือน", "ปี", "รหัสพนักงาน", "ชื่อ-สกุล", "ตำแหน่ง", "เงินเดือน", "ค่าตอบแทน", "อื่นๆ", "รวมรับ", "รวมหัก", "สุทธิ"];
+        const colW = [10, 12, 12, 20, 35, 25, 18, 18, 18, 20, 12, 15, 12, 12, 20, 20];
+        const headers = ["งวดที่", "เดือน", "ปี", "เลขบัตร/รหัส", "ชื่อ-สกุล", "ตำแหน่ง", "เงินเดือน", "ค่าตอบแทน", "อื่นๆ", "รวมรับ", "สปส.", "เบิก", "น้ำ", "ไฟ", "รวมหัก", "สุทธิ"];
         
         doc.setFontSize(10);
         doc.setDrawColor(0, 0, 0);
@@ -198,29 +193,24 @@ export const generateSalarySummary = async (dataArray) => {
         
         let currentX = startX;
         
-        // วาดหัวตารางแบ่งตามสี
-        for(let i=0; i<12; i++) {
-            // โซนสี 1: งวด/เดือน/ปี (ฟ้าอ่อน)
-            if(i >= 0 && i <= 2) doc.setFillColor(200, 220, 255);
-            // โซนสี 2: รหัส/ชื่อ/ตำแหน่ง (เหลืองอ่อน)
-            else if(i >= 3 && i <= 5) doc.setFillColor(255, 250, 200);
-            // โซนสี 3: รายรับ (เขียวอ่อน)
-            else if(i >= 6 && i <= 9) doc.setFillColor(220, 255, 220);
-            // โซนสี 4: รวมหัก (ชมพูอ่อน)
-            else if(i === 10) doc.setFillColor(255, 220, 220);
-            // โซนสี 5: สุทธิ (เทาฟ้า)
-            else if(i === 11) doc.setFillColor(230, 230, 240);
+        // วาดหัวตารางแบ่งตามสีที่ระบุ
+        for(let i=0; i<16; i++) {
+            if(i >= 0 && i <= 2) doc.setFillColor(200, 220, 255); // ฟ้าอ่อน (งวด/เดือน/ปี)
+            else if(i >= 3 && i <= 5) doc.setFillColor(255, 250, 200); // เหลืองอ่อน (ข้อมูลพนักงาน)
+            else if(i >= 6 && i <= 9) doc.setFillColor(220, 255, 220); // เขียวอ่อน (รายรับ)
+            else if(i >= 10 && i <= 14) doc.setFillColor(255, 220, 220); // ชมพูอ่อน/แดงอ่อน (รายหัก)
+            else if(i === 15) doc.setFillColor(230, 230, 240); // เทาฟ้า (สุทธิ)
 
             doc.rect(currentX, y, colW[i], 10, 'FD'); // วาดกรอบพร้อมเติมสี
             doc.text(headers[i], currentX + colW[i]/2, y + 6, { align: "center" });
             currentX += colW[i];
         }
 
-        y += 10; // ขยับลง 1 แถว
+        y += 10;
 
         // วาดข้อมูล
         dataArray.forEach(row => {
-            if (y > 190) { // ขึ้นหน้าใหม่เมื่อสุดกระดาษ
+            if (y > 190) { 
                 doc.addPage();
                 y = 20;
             }
@@ -228,14 +218,19 @@ export const generateSalarySummary = async (dataArray) => {
             currentX = startX;
             doc.setFillColor(255, 255, 255); // พื้นหลังสีขาวสำหรับข้อมูล
 
-            for (let i = 0; i < 12; i++) {
+            for (let i = 0; i < 16; i++) {
                 let textVal = row[i];
                 if (textVal == null) textVal = "-";
 
-                // วาดกรอบช่อง
+                // แปลงตัวเลขใส่คอมม่าถ้าเป็นคอลัมน์เงิน
+                if (i >= 6 && i <= 15) {
+                    let num = parseFloat(String(textVal).replace(/,/g, ''));
+                    if (isNaN(num)) num = 0;
+                    textVal = num.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:0});
+                }
+
                 doc.rect(currentX, y, colW[i], 8, 'FD');
                 
-                // จัดชิดขวาสำหรับคอลัมน์ที่เป็นตัวเลข (คอลัมน์ที่ 6-11)
                 if (i >= 6) {
                     doc.text(String(textVal), currentX + colW[i] - 2, y + 5.5, { align: "right" });
                 } else {
@@ -256,7 +251,7 @@ export const generateSalarySummary = async (dataArray) => {
 };
 
 // ==========================================
-// 3. ฟังก์ชันสร้างใบเสร็จรับเงิน (แบบฟอร์มติ๊ก เงินสด/โอน)
+// 3. ฟังก์ชันสร้างใบเสร็จรับเงิน (แบบฟอร์มติ๊ก เงินสด/โอน และดึงข้อมูลพนักงาน/บริษัท)
 // ==========================================
 export const generateReceipt = async (data) => {
     try {
@@ -271,12 +266,13 @@ export const generateReceipt = async (data) => {
         const startY = 50;
         const lineH = 9;
         
-        // ข้อมูล
+        // ข้อมูลพนักงานและบริษัท (รองรับกรณีข้อมูลมาไม่ครบให้มีเส้นประ)
         const empName = data.empName || "...........................................................";
         const empAddr = data.empAddress || "...........................................................................";
         const companyName = data.companyName || ".............................................................................................";
         const companyAddr = data.companyAddress || ".............................................................................................";
 
+        // ส่วนข้าพเจ้า (ผู้รับเงิน)
         doc.text("ข้าพเจ้า", 25, startY);
         doc.text(empName, 45, startY);
         
@@ -290,6 +286,7 @@ export const generateReceipt = async (data) => {
         doc.text("..........................................", 75, startY + (lineH * 2));
         doc.text("ได้รับเงินจาก", 110, startY + (lineH * 2));
 
+        // ส่วนบริษัท (ผู้จ่าย)
         doc.text("บริษัท", 25, startY + (lineH * 3));
         doc.text(companyName, 45, startY + (lineH * 3));
         
@@ -297,7 +294,7 @@ export const generateReceipt = async (data) => {
         doc.text(companyAddr, 50, startY + (lineH * 4));
 
         doc.text("เลขประจำตัวผู้เสียภาษี", 25, startY + (lineH * 5));
-        doc.text("..........................................", 70, startY + (lineH * 5));
+        doc.text(data.companyTaxId || "..........................................", 70, startY + (lineH * 5));
 
         // --- ตารางรายการ ---
         const tableY = startY + (lineH * 6) + 5;
@@ -373,49 +370,48 @@ export const generateTripReport = async (pdfData, type, monthLabel) => {
         const doc = initDoc('l');
 
         doc.setFontSize(18);
-        doc.text(`สรุปจำนวนเที่ยวรายวัน (${type})`, 148.5, 20, { align: "center" });
+        doc.text(`รายงานสรุปจำนวนเที่ยวรายวัน (${type})`, 148.5, 20, { align: "center" });
         doc.setFontSize(14);
-        doc.text(`ประจำเดือน ${monthLabel}`, 148.5, 30, { align: "center" });
+        doc.text(`ประจำเดือน: ${monthLabel}`, 148.5, 30, { align: "center" });
 
         let startX = 10;
         let startY = 40;
-        let cellWidth = 14; 
-        let nameWidth = 45; 
-        let totalW = 22;
+        let cellWidth = 13;
+        let nameWidth = 50;
+        let totalW = 20;
         
-        doc.setFontSize(12);
-        doc.setDrawColor(0, 0, 0);
+        doc.setFontSize(10);
         doc.setLineWidth(0.1);
-        
-        // --- หัวตาราง ---
+        doc.setDrawColor(0, 0, 0);
+
+        // --- หัวตาราง (ลงสีตามโซนที่ระบุ) ---
         // 1. ชื่อพนักงาน (สีส้มอ่อน)
         doc.setFillColor(255, 220, 180); 
         doc.rect(startX, startY, nameWidth, 10, 'FD');
-        doc.text("ชื่อพนักงาน", startX + nameWidth/2, startY + 7, { align: "center" });
+        doc.text("ชื่อพนักงาน", startX + nameWidth/2, startY + 6.5, { align: "center" });
 
         // 2. วันที่ 1-15 (สีเขียวอ่อน)
         doc.setFillColor(200, 240, 200);
         for (let i = 1; i <= 15; i++) {
             let x = startX + nameWidth + ((i - 1) * cellWidth);
             doc.rect(x, startY, cellWidth, 10, 'FD');
-            doc.text(`${i}`, x + cellWidth/2, startY + 7, { align: "center" });
+            doc.text(`${i}`, x + cellWidth/2, startY + 6.5, { align: "center" });
         }
         
         // 3. รวม (สีฟ้า)
         let totalX = startX + nameWidth + (15 * cellWidth);
         doc.setFillColor(180, 220, 255);
         doc.rect(totalX, startY, totalW, 10, 'FD');
-        doc.text("รวม", totalX + totalW/2, startY + 7, { align: "center" });
+        doc.text("รวม", totalX + totalW/2, startY + 6.5, { align: "center" });
 
-        // --- เนื้อหาตาราง ---
+        // --- ข้อมูลตาราง ---
         let y = startY + 10;
-        doc.setFontSize(10);
         
         pdfData.forEach(row => {
             const name = row[0];
             const total = row[row.length - 1];
 
-            // เซ็ตพื้นหลังเป็นสีเทาทั้งหมดในส่วนข้อมูล
+            // เซ็ตพื้นหลังเนื้อหาตารางเป็น "สีเทา" (240, 240, 240) ทั้งหมด
             doc.setFillColor(240, 240, 240);
 
             // ชื่อ
@@ -430,11 +426,11 @@ export const generateTripReport = async (pdfData, type, monthLabel) => {
                 doc.rect(x, y, cellWidth, 10, 'FD');
                 
                 if(String(val).includes("หยุด")) {
-                     doc.setTextColor(220, 50, 50); // ตัวหนังสือสีแดง
+                     doc.setTextColor(255, 0, 0); // คำว่าหยุด สีแดง
                      doc.text("หยุด", x + cellWidth/2, y + 6.5, { align: "center" });
-                     doc.setTextColor(0, 0, 0); // กลับเป็นสีดำ
+                     doc.setTextColor(0, 0, 0); // รีเซ็ตเป็นสีดำ
                 } else {
-                     doc.text(String(val), x + cellWidth/2, y + 6.5, { align: "center" });
+                     doc.text(String(val), x + cellWidth/2, y + 6.5, { align: "center" }); // ตัวเลขสีดำ
                 }
             }
 
@@ -457,7 +453,7 @@ export const generateTripReport = async (pdfData, type, monthLabel) => {
 };
 
 // ==========================================
-// 5. ฟังก์ชันสร้างรายงานบัญชี (Ledger) - (หัวเทาอ่อน + มีกรอบตารางเป๊ะ)
+// 5. ฟังก์ชันสร้างรายงานบัญชี (Ledger) - แก้สีหัวตาราง
 // ==========================================
 export const generateLedger = async (summary, list) => {
     try {
@@ -467,8 +463,7 @@ export const generateLedger = async (summary, list) => {
         doc.setFontSize(14);
         doc.text(summary.label, 105, 28, { align: "center" });
 
-        // กล่องสรุปด้านบน
-        doc.setDrawColor(0, 0, 0);
+        doc.setDrawColor(0);
         doc.setFillColor(255, 255, 255);
         doc.rect(20, 35, 170, 20, 'FD');
         doc.setFontSize(12);
@@ -476,13 +471,14 @@ export const generateLedger = async (summary, list) => {
         doc.text(`รายจ่ายรวม: ${summary.exp.toLocaleString()}`, 90, 48);
         doc.text(`คงเหลือ: ${summary.net.toLocaleString()}`, 150, 48);
 
-        // --- หัวตาราง (Grid) ---
+        // --- หัวตาราง ---
         let y = 65;
-        const colW = [25, 35, 60, 25, 25]; // รวม 170
+        const colW = [25, 35, 60, 25, 25];
         const headers = ["วันที่", "หมวดหมู่", "รายการ", "รับ", "จ่าย"];
         
-        doc.setFillColor(230, 230, 230); // สีเทาอ่อน (ไม่ใช่สีดำ)
+        doc.setFillColor(230, 230, 230); // สีเทาอ่อน
         doc.setLineWidth(0.1);
+        doc.setTextColor(0, 0, 0); // ตัวหนังสือดำ
         
         let currentX = 20;
         for(let i=0; i<5; i++) {
@@ -495,7 +491,7 @@ export const generateLedger = async (summary, list) => {
 
         y += 10;
 
-        // --- เนื้อหาตาราง ---
+        // --- ข้อมูล ---
         list.forEach(item => {
             if (y > 270) {
                 doc.addPage();
@@ -503,43 +499,38 @@ export const generateLedger = async (summary, list) => {
             }
 
             currentX = 20;
-            doc.setFillColor(255, 255, 255); // พื้นหลังขาวสำหรับเนื้อหา
+            doc.setFillColor(255, 255, 255); // พื้นหลังขาว
 
-            // วันที่
             doc.rect(currentX, y, colW[0], 10, 'FD');
             doc.text(item.date, currentX + colW[0]/2, y + 7, { align: "center" });
             currentX += colW[0];
 
-            // หมวดหมู่
             doc.rect(currentX, y, colW[1], 10, 'FD');
             doc.text(item.category || "-", currentX + colW[1]/2, y + 7, { align: "center" });
             currentX += colW[1];
 
-            // รายการ
             doc.rect(currentX, y, colW[2], 10, 'FD');
             doc.text(item.description.substring(0, 30), currentX + 2, y + 7);
             currentX += colW[2];
 
-            // รับ
             doc.rect(currentX, y, colW[3], 10, 'FD');
             if(item.income > 0) {
-                doc.setTextColor(0, 128, 0); // เขียว
+                doc.setTextColor(0, 128, 0);
                 doc.text(item.income.toLocaleString(), currentX + colW[3] - 2, y + 7, { align: "right" });
             } else {
                 doc.text("-", currentX + colW[3] - 2, y + 7, { align: "right" });
             }
-            doc.setTextColor(0, 0, 0); // รีเซ็ตดำ
+            doc.setTextColor(0, 0, 0);
             currentX += colW[3];
 
-            // จ่าย
             doc.rect(currentX, y, colW[4], 10, 'FD');
             if(item.expense > 0) {
-                doc.setTextColor(255, 0, 0); // แดง
+                doc.setTextColor(255, 0, 0);
                 doc.text(item.expense.toLocaleString(), currentX + colW[4] - 2, y + 7, { align: "right" });
             } else {
                 doc.text("-", currentX + colW[4] - 2, y + 7, { align: "right" });
             }
-            doc.setTextColor(0, 0, 0); // รีเซ็ตดำ
+            doc.setTextColor(0, 0, 0);
             
             y += 10;
         });
