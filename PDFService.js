@@ -363,9 +363,9 @@ export const generateReceipt = async (data) => {
 };
 
 // ==========================================
-// 4. ฟังก์ชันสร้างรายงานเที่ยววิ่ง (หัวสีส้ม/เขียว/ฟ้า, พื้นหลังข้อมูลขาว, หยุดสีแดง)
+// 4. ฟังก์ชันสร้างรายงานเที่ยววิ่ง (เพิ่มพารามิเตอร์ period)
 // ==========================================
-export const generateTripReport = async (pdfData, type, monthLabel) => {
+export const generateTripReport = async (pdfData, type, monthLabel, period = 1) => {
     try {
         const doc = initDoc('l');
 
@@ -383,6 +383,11 @@ export const generateTripReport = async (pdfData, type, monthLabel) => {
         doc.setFontSize(10);
         doc.setLineWidth(0.1);
 
+        // คำนวณจำนวนวันจากข้อมูลที่ส่งมาแบบไดนามิก (ลบชื่อและช่องรวมออก)
+        let numDays = pdfData.length > 0 ? pdfData[0].length - 2 : 15;
+        // กำหนดวันเริ่มต้น: ถ้างวด 2 ให้เริ่มที่ 16, ถ้างวด 1 เริ่มที่ 1
+        let startDay = (period === 2) ? 16 : 1;
+
         // --- หัวตาราง (ลงสีตามโซนที่ระบุ) ---
         // 1. ชื่อพนักงาน (สีส้มอ่อน)
         doc.setDrawColor(0, 0, 0);
@@ -390,17 +395,17 @@ export const generateTripReport = async (pdfData, type, monthLabel) => {
         doc.rect(startX, startY, nameWidth, 10, 'FD');
         doc.text("ชื่อพนักงาน", startX + nameWidth/2, startY + 6.5, { align: "center" });
 
-        // 2. วันที่ 1-15 (สีเขียวอ่อน) - [แก้บั๊กโดยการย้าย setFillColor เข้ามาในลูป]
-        for (let i = 1; i <= 15; i++) {
+        // 2. วันที่แบบไดนามิก (เปลี่ยนจากฟิกซ์ 1-15 เป็นจำนวนวันจริง)
+        for (let i = 0; i < numDays; i++) {
             doc.setDrawColor(0, 0, 0);
             doc.setFillColor(200, 240, 200); 
-            let x = startX + nameWidth + ((i - 1) * cellWidth);
+            let x = startX + nameWidth + (i * cellWidth);
             doc.rect(x, startY, cellWidth, 10, 'FD');
-            doc.text(`${i}`, x + cellWidth/2, startY + 6.5, { align: "center" });
+            doc.text(`${startDay + i}`, x + cellWidth/2, startY + 6.5, { align: "center" });
         }
         
-        // 3. รวม (สีฟ้า)
-        let totalX = startX + nameWidth + (15 * cellWidth);
+        // 3. รวม (สีฟ้า) ปรับเลื่อนตามจำนวนวันที่เปลี่ยนไป
+        let totalX = startX + nameWidth + (numDays * cellWidth);
         doc.setDrawColor(0, 0, 0);
         doc.setFillColor(180, 220, 255);
         doc.rect(totalX, startY, totalW, 10, 'FD');
@@ -424,8 +429,8 @@ export const generateTripReport = async (pdfData, type, monthLabel) => {
             doc.rect(startX, y, nameWidth, 10, 'S');
             doc.text(name, startX + 2, y + 6.5);
 
-            // วันที่ 1-15
-            for (let i = 1; i <= 15; i++) {
+            // วันที่วาดตามจำนวนจริง
+            for (let i = 1; i <= numDays; i++) {
                 let x = startX + nameWidth + ((i - 1) * cellWidth);
                 let val = row[i] || "-";
                 
@@ -481,7 +486,6 @@ export const generateLedger = async (summary, list) => {
         doc.setTextColor(0, 0, 0); // ตัวหนังสือดำ
         
         let currentX = 20;
-        // [แก้บั๊กโดยการย้าย setFillColor เข้ามาในลูป]
         for(let i=0; i<5; i++) {
             doc.setDrawColor(0, 0, 0);
             doc.setFillColor(230, 230, 230); // สีเทาอ่อน ย้ำในลูปทุกรอบ
