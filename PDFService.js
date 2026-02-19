@@ -327,10 +327,20 @@ export const generateLedger = async (summary, list) => {
         let y = 65;
         doc.setFillColor(220);
         doc.rect(20, y, 170, 10, 'F');
+        doc.rect(20, y, 170, 10); // Header Border
+        
+        doc.setFontSize(10);
         doc.text("วันที่", 25, y + 7);
-        doc.text("รายการ", 50, y + 7);
-        doc.text("รับ", 140, y + 7, { align: "right" });
-        doc.text("จ่าย", 180, y + 7, { align: "right" });
+        doc.text("หมวดหมู่", 48, y + 7); // Increased column
+        doc.text("รายการ", 82, y + 7);
+        doc.text("รับ", 163, y + 7, { align: "right" });
+        doc.text("จ่าย", 188, y + 7, { align: "right" });
+
+        // Vertical lines for Header
+        doc.line(45, y, 45, y + 10);  // After Date
+        doc.line(80, y, 80, y + 10);  // After Category
+        doc.line(140, y, 140, y + 10); // After Description
+        doc.line(165, y, 165, y + 10); // After Income
         
         y += 10;
 
@@ -340,25 +350,35 @@ export const generateLedger = async (summary, list) => {
                 doc.addPage();
                 y = 20;
             }
+
+            // Draw Row Rect (Border)
+            doc.rect(20, y, 170, 10);
+
+            // Vertical lines for Row
+            doc.line(45, y, 45, y + 10);
+            doc.line(80, y, 80, y + 10);
+            doc.line(140, y, 140, y + 10);
+            doc.line(165, y, 165, y + 10);
+
             doc.text(item.date, 25, y + 7);
-            doc.text(item.description.substring(0, 40), 50, y + 7);
+            doc.text(item.category || "-", 48, y + 7); // Display Category
+            doc.text(item.description.substring(0, 35), 82, y + 7); // Adjusted width
             
             if(item.income > 0) {
                  doc.setTextColor(0, 128, 0);
-                 doc.text(item.income.toLocaleString(), 140, y + 7, { align: "right" });
+                 doc.text(item.income.toLocaleString(), 163, y + 7, { align: "right" });
             } else {
-                 doc.text("-", 140, y + 7, { align: "right" });
+                 doc.text("-", 163, y + 7, { align: "right" });
             }
             
             if(item.expense > 0) {
                  doc.setTextColor(255, 0, 0);
-                 doc.text(item.expense.toLocaleString(), 180, y + 7, { align: "right" });
+                 doc.text(item.expense.toLocaleString(), 188, y + 7, { align: "right" });
             } else {
-                 doc.text("-", 180, y + 7, { align: "right" });
+                 doc.text("-", 188, y + 7, { align: "right" });
             }
             
             doc.setTextColor(0); // Reset color
-            doc.line(20, y+10, 190, y+10); // bottom line
             y += 10;
         });
 
