@@ -22,9 +22,9 @@
     <!-- 2. โหลดไฟล์โปรแกรมของคุณ -->
     <script type="module" src="./src/fonts/SarabunNew.js"></script>
     
-    <!-- *** แก้ไขจุดสำคัญ: เพิ่ม type="module" และ import แบบมีชื่อเพื่อให้เรียกใช้ได้ *** -->
+    <!-- *** แก้ไขจุดสำคัญ: เพิ่ม type="module" และ import แบบมีชื่อเพื่อให้เรียกใช้ได้ และเติม v=99 ล้างแคช *** -->
     <script type="module">
-        import * as PDFService from './PDFService.js';
+        import * as PDFService from './PDFService.js?v=99';
         window.PDFService = PDFService; // ผูกเข้ากับ window เพื่อให้ปุ่ม HTML เรียกใช้ได้
     </script>
 
@@ -718,13 +718,20 @@
         window.printPaymentVoucher = (projId) => {
              const p = appState.projects.find(x => x.id == projId); 
              if (!p) return;
-             const emp = appState.employees.find(e => e.id == p.emp_id) || { fname: '', lname: '', id: '' };
              
-             // Combine data for Service
+             // ดึงข้อมูลพนักงาน (ถ้าไม่มี ให้มีค่าว่าง)
+             const emp = appState.employees.find(e => e.id == p.emp_id) || { fname: '', lname: '', id: '', address: '', prefix: '' };
+             
+             // ส่งข้อมูลให้ PDFService.js ทั้ง 6 อย่าง ตามโครงสร้างใหม่
              const receiptData = {
                  id: p.id,
                  date: p.date,
-                 empName: `${emp.prefix}${emp.fname} ${emp.lname}`,
+                 empName: `${emp.prefix || ''}${emp.fname || ''} ${emp.lname || ''}`.trim(), // 1. ชื่อ
+                 empAddress: emp.address || "", // 2. ที่อยู่พนักงาน
+                 empCardId: emp.id || "", // 3. เลขบัตรประชาชน
+                 companyName: appState.settings.company_name || "", // 4. ชื่อบริษัท
+                 companyAddress: appState.settings.company_address || "", // 5. ที่อยู่บริษัท
+                 companyTaxId: appState.settings.tax_id || "", // 6. เลขผู้เสียภาษีบริษัท
                  job_name: p.job_name,
                  amount: p.amount,
                  wht_rate: p.wht_rate,
@@ -741,19 +748,24 @@
         };
 
         window.exportToPDF = () => {
+             // แก้ให้ส่งข้อมูล 16 คอลัมน์ ครบถ้วนตามตารางละเอียดที่กำหนดไว้
              const data = filteredReportData.map(d => [
-                 d.period,
-                 d.month,
-                 d.year,
-                 d.emp_id,
-                 d.name,
-                 d.pos,
-                 d.salary.toLocaleString(),
-                 d.incentive.toLocaleString(),
-                 d.other.toLocaleString(),
-                 (d.salary + d.incentive + d.other).toLocaleString(),
-                 (d.sso + d.tax + d.advance + d.water + d.electricity).toLocaleString(),
-                 d.net.toLocaleString()
+                 d.period, // 1. งวด
+                 d.month, // 2. เดือน
+                 d.year, // 3. ปี
+                 d.emp_id, // 4. เลขบัตร/รหัส
+                 d.name, // 5. ชื่อ-สกุล
+                 d.pos, // 6. ตำแหน่ง
+                 d.salary, // 7. เงินเดือน
+                 d.incentive, // 8. ค่าตอบแทน
+                 d.other, // 9. อื่นๆ
+                 (d.salary + d.incentive + d.other), // 10. รวมรับ
+                 d.sso, // 11. สปส
+                 d.advance, // 12. เบิก
+                 d.water, // 13. น้ำ
+                 d.electricity, // 14. ไฟ
+                 (d.sso + d.tax + d.advance + d.water + d.electricity), // 15. รวมหัก
+                 d.net // 16. สุทธิ
              ]);
              PDFService.generateSalarySummary(data);
         };
@@ -1959,6 +1971,3 @@ window.exportToExcel = function() {
     </script>
 </body>
 </html>
-
-
-
