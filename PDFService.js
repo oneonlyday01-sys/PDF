@@ -64,7 +64,7 @@ const bahtText = (num) => {
 };
 
 // ==========================================
-// 1. ฟังก์ชันสร้างสลิปเงินเดือน (1 หน้า A4 มี 2 สลิป + ลบกรอบล่าง)
+// 1. ฟังก์ชันสร้างสลิปเงินเดือน (1 หน้า A4 มี 2 สลิป + เอาข้อมูลด้านล่างออกทั้งหมด)
 // ==========================================
 export const generatePayslip = async (dataArray) => {
     try {
@@ -148,12 +148,7 @@ export const generatePayslip = async (dataArray) => {
             doc.text(`เงินได้สุทธิ (Net Pay):`, 120, yPos + 50);
             doc.text(`${Number(data.net).toLocaleString()} บาท`, 190, yPos + 50, { align: "right" });
             
-            // --- ส่วนข้อมูลธนาคารและหมายเหตุ (ไม่มีกรอบสี่เหลี่ยมแล้ว) ---
-            doc.setFontSize(10);
-            doc.setTextColor(80, 80, 80);
-            doc.text(`โอนเข้าบัญชี: ${data.bank || '-'}`, 25, yPos + 65);
-            doc.text(`หมายเหตุ: เอกสารนี้สร้างจากระบบอัตโนมัติ`, 25, yPos + 72);
-            doc.setTextColor(0, 0, 0); // รีเซ็ตสีดำ
+            // ลบกรอบสี่เหลี่ยมและข้อมูลธนาคาร/หมายเหตุด้านล่างออกทั้งหมด ปล่อยโล่ง
         });
 
         const fileName = dataArray.length === 1 ? `Payslip_${dataArray[0].name}.pdf` : `Payslip_Batch_${new Date().getTime()}.pdf`;
@@ -167,7 +162,7 @@ export const generatePayslip = async (dataArray) => {
 };
 
 // ==========================================
-// 2. ฟังก์ชันสร้างรายงานสรุปเงินเดือน (แนวนอน ละเอียด แยกสีตามกลุ่ม)
+// 2. ฟังก์ชันสร้างรายงานสรุปเงินเดือน (ตารางละเอียดแยกสีตามกลุ่ม และพื้นหลังข้อมูลสีขาว)
 // ==========================================
 export const generateSalarySummary = async (dataArray) => {
     try {
@@ -251,7 +246,7 @@ export const generateSalarySummary = async (dataArray) => {
 };
 
 // ==========================================
-// 3. ฟังก์ชันสร้างใบเสร็จรับเงิน (แบบฟอร์มติ๊ก เงินสด/โอน และดึงข้อมูลพนักงาน/บริษัท)
+// 3. ฟังก์ชันสร้างใบเสร็จรับเงิน (ดึงข้อมูลพนักงาน/บริษัท ไม่มีเส้นประ)
 // ==========================================
 export const generateReceipt = async (data) => {
     try {
@@ -266,11 +261,13 @@ export const generateReceipt = async (data) => {
         const startY = 50;
         const lineH = 9;
         
-        // ข้อมูลพนักงานและบริษัท (รองรับกรณีข้อมูลมาไม่ครบให้มีเส้นประ)
-        const empName = data.empName || "...........................................................";
-        const empAddr = data.empAddress || "...........................................................................";
-        const companyName = data.companyName || ".............................................................................................";
-        const companyAddr = data.companyAddress || ".............................................................................................";
+        // ข้อมูลพนักงานและบริษัท (ถ้าไม่มีให้เว้นว่าง ไม่แสดงเส้นประ)
+        const empName = data.empName || "";
+        const empAddr = data.empAddress || "";
+        const empCardId = data.empCardId || "";
+        const companyName = data.companyName || "";
+        const companyAddr = data.companyAddress || "";
+        const companyTaxId = data.companyTaxId || "";
 
         // ส่วนข้าพเจ้า (ผู้รับเงิน)
         doc.text("ข้าพเจ้า", 25, startY);
@@ -280,10 +277,10 @@ export const generateReceipt = async (data) => {
         doc.text(empAddr.substring(0, 40), 125, startY); 
 
         doc.text("ตำบล/อำเภอ/จังหวัด", 25, startY + lineH);
-        doc.text(empAddr.length > 40 ? empAddr.substring(40) : "...........................................................................", 65, startY + lineH);
+        doc.text(empAddr.length > 40 ? empAddr.substring(40) : "", 65, startY + lineH);
         
         doc.text("เลขประจำตัวบัตรประชาชน", 25, startY + (lineH * 2));
-        doc.text("..........................................", 75, startY + (lineH * 2));
+        doc.text(empCardId, 75, startY + (lineH * 2));
         doc.text("ได้รับเงินจาก", 110, startY + (lineH * 2));
 
         // ส่วนบริษัท (ผู้จ่าย)
@@ -294,7 +291,7 @@ export const generateReceipt = async (data) => {
         doc.text(companyAddr, 50, startY + (lineH * 4));
 
         doc.text("เลขประจำตัวผู้เสียภาษี", 25, startY + (lineH * 5));
-        doc.text(data.companyTaxId || "..........................................", 70, startY + (lineH * 5));
+        doc.text(companyTaxId, 70, startY + (lineH * 5));
 
         // --- ตารางรายการ ---
         const tableY = startY + (lineH * 6) + 5;
@@ -363,7 +360,7 @@ export const generateReceipt = async (data) => {
 };
 
 // ==========================================
-// 4. ฟังก์ชันสร้างรายงานเที่ยววิ่ง (หัวสีส้ม/เขียว/ฟ้า, เนื้อหาพื้นเทา)
+// 4. ฟังก์ชันสร้างรายงานเที่ยววิ่ง (หัวสีส้ม/เขียว/ฟ้า, พื้นหลังขาว, หยุดสีแดง)
 // ==========================================
 export const generateTripReport = async (pdfData, type, monthLabel) => {
     try {
@@ -411,8 +408,8 @@ export const generateTripReport = async (pdfData, type, monthLabel) => {
             const name = row[0];
             const total = row[row.length - 1];
 
-            // เซ็ตพื้นหลังเนื้อหาตารางเป็น "สีเทา" (240, 240, 240) ทั้งหมด
-            doc.setFillColor(240, 240, 240);
+            // เซ็ตพื้นหลังเนื้อหาตารางเป็น "สีขาว" ทั้งหมด
+            doc.setFillColor(255, 255, 255);
 
             // ชื่อ
             doc.rect(startX, y, nameWidth, 10, 'FD');
@@ -453,7 +450,7 @@ export const generateTripReport = async (pdfData, type, monthLabel) => {
 };
 
 // ==========================================
-// 5. ฟังก์ชันสร้างรายงานบัญชี (Ledger) - แก้สีหัวตาราง
+// 5. ฟังก์ชันสร้างรายงานบัญชี (Ledger) - แก้สีหัวตารางและพื้นขาว
 // ==========================================
 export const generateLedger = async (summary, list) => {
     try {
@@ -476,7 +473,7 @@ export const generateLedger = async (summary, list) => {
         const colW = [25, 35, 60, 25, 25];
         const headers = ["วันที่", "หมวดหมู่", "รายการ", "รับ", "จ่าย"];
         
-        doc.setFillColor(230, 230, 230); // สีเทาอ่อน
+        doc.setFillColor(230, 230, 230); // สีเทาอ่อน (ให้อ่านตัวหนังสือออก)
         doc.setLineWidth(0.1);
         doc.setTextColor(0, 0, 0); // ตัวหนังสือดำ
         
@@ -491,7 +488,7 @@ export const generateLedger = async (summary, list) => {
 
         y += 10;
 
-        // --- ข้อมูล ---
+        // --- ข้อมูลตาราง ---
         list.forEach(item => {
             if (y > 270) {
                 doc.addPage();
@@ -499,20 +496,24 @@ export const generateLedger = async (summary, list) => {
             }
 
             currentX = 20;
-            doc.setFillColor(255, 255, 255); // พื้นหลังขาว
+            doc.setFillColor(255, 255, 255); // พื้นหลังขาวตามที่ขอ
 
+            // วันที่
             doc.rect(currentX, y, colW[0], 10, 'FD');
             doc.text(item.date, currentX + colW[0]/2, y + 7, { align: "center" });
             currentX += colW[0];
 
+            // หมวดหมู่
             doc.rect(currentX, y, colW[1], 10, 'FD');
             doc.text(item.category || "-", currentX + colW[1]/2, y + 7, { align: "center" });
             currentX += colW[1];
 
+            // รายการ
             doc.rect(currentX, y, colW[2], 10, 'FD');
             doc.text(item.description.substring(0, 30), currentX + 2, y + 7);
             currentX += colW[2];
 
+            // รับ (ตัวเลขสีเขียว)
             doc.rect(currentX, y, colW[3], 10, 'FD');
             if(item.income > 0) {
                 doc.setTextColor(0, 128, 0);
@@ -523,6 +524,7 @@ export const generateLedger = async (summary, list) => {
             doc.setTextColor(0, 0, 0);
             currentX += colW[3];
 
+            // จ่าย (ตัวเลขสีแดง)
             doc.rect(currentX, y, colW[4], 10, 'FD');
             if(item.expense > 0) {
                 doc.setTextColor(255, 0, 0);
