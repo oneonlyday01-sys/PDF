@@ -660,17 +660,12 @@
                     dayColIndex++;
                 }
 
-                // Fill remaining columns if month has fewer days than table slots (standard 15 slots)
-                while(row.length < 16) {
-                    row.push("-");
-                }
-
                 row.push(empTotal.toString());
                 pdfData.push(row);
             });
 
-            // Call Service
-            PDFService.generateTripReport(pdfData, type.toUpperCase(), monthLabel);
+            // Call Service (เพิ่มพารามิเตอร์ p เข้าไป)
+            PDFService.generateTripReport(pdfData, type.toUpperCase(), monthLabel, p);
         };
 
         window.printAllSlips = () => {
