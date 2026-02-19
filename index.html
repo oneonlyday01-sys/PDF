@@ -24,7 +24,7 @@
     
     <!-- *** แก้ไขจุดสำคัญ: เพิ่ม type="module" และ import แบบมีชื่อเพื่อให้เรียกใช้ได้ *** -->
     <script type="module">
-        import * as PDFService from './PDFService.js';
+        import * as PDFService from './PDFService.js?v=2';
         window.PDFService = PDFService; // ผูกเข้ากับ window เพื่อให้ปุ่ม HTML เรียกใช้ได้
     </script>
 
@@ -1959,4 +1959,5 @@ window.exportToExcel = function() {
     </script>
 </body>
 </html>
+
 
