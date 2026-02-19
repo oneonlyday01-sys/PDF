@@ -64,7 +64,7 @@ const bahtText = (num) => {
 };
 
 // ==========================================
-// 1. ฟังก์ชันสร้างสลิปเงินเดือน (1 หน้า A4 มี 2 สลิป + เอาข้อมูลด้านล่างออกทั้งหมด)
+// 1. ฟังก์ชันสร้างสลิปเงินเดือน (1 หน้า A4 มี 2 สลิป บน-ล่าง + เส้นปะ + ลบข้อมูลด้านล่างออกหมด)
 // ==========================================
 export const generatePayslip = async (dataArray) => {
     try {
@@ -79,13 +79,13 @@ export const generatePayslip = async (dataArray) => {
                 doc.addPage();
             }
 
-            // วาดเส้นปะแบ่งครึ่งหน้ากระดาษ
+            // วาดเส้นปะแบ่งครึ่งหน้ากระดาษ (เฉพาะตอนวาดสลิปล่าง)
             if (isBottom) {
                 doc.setLineDash([3, 3], 0);
                 doc.setDrawColor(150, 150, 150);
                 doc.line(10, 148.5, 200, 148.5);
-                doc.setLineDash([]); 
-                doc.setDrawColor(0, 0, 0); 
+                doc.setLineDash([]); // รีเซ็ตเส้นทึบ
+                doc.setDrawColor(0, 0, 0); // รีเซ็ตสีดำ
             }
 
             // --- หัวสลิป ---
@@ -148,12 +148,13 @@ export const generatePayslip = async (dataArray) => {
             doc.text(`เงินได้สุทธิ (Net Pay):`, 120, yPos + 50);
             doc.text(`${Number(data.net).toLocaleString()} บาท`, 190, yPos + 50, { align: "right" });
             
-            // ลบกรอบสี่เหลี่ยมและข้อมูลธนาคาร/หมายเหตุด้านล่างออกทั้งหมด ปล่อยโล่ง
+            // ลบกรอบสี่เหลี่ยมและตัวหนังสือด้านล่างออกทั้งหมด ตามที่ขอ
         });
 
         const fileName = dataArray.length === 1 ? `Payslip_${dataArray[0].name}.pdf` : `Payslip_Batch_${new Date().getTime()}.pdf`;
         doc.save(fileName);
         return true;
+
     } catch (error) {
         console.error("Error generating Payslip:", error);
         alert("เกิดข้อผิดพลาดในการสร้าง PDF: " + error.message);
@@ -211,7 +212,7 @@ export const generateSalarySummary = async (dataArray) => {
             }
 
             currentX = startX;
-            doc.setFillColor(255, 255, 255); // พื้นหลังสีขาวสำหรับข้อมูล
+            doc.setFillColor(255, 255, 255); // พื้นหลังสีขาวสำหรับช่องข้อมูลทั้งหมด
 
             for (let i = 0; i < 16; i++) {
                 let textVal = row[i];
@@ -246,7 +247,7 @@ export const generateSalarySummary = async (dataArray) => {
 };
 
 // ==========================================
-// 3. ฟังก์ชันสร้างใบเสร็จรับเงิน (ดึงข้อมูลพนักงาน/บริษัท ไม่มีเส้นประ)
+// 3. ฟังก์ชันสร้างใบเสร็จรับเงิน (แบบใหม่ ดึง 6 ข้อมูล เรียงบรรทัดลงมา)
 // ==========================================
 export const generateReceipt = async (data) => {
     try {
@@ -261,7 +262,7 @@ export const generateReceipt = async (data) => {
         const startY = 50;
         const lineH = 9;
         
-        // ข้อมูลพนักงานและบริษัท (ถ้าไม่มีให้เว้นว่าง ไม่แสดงเส้นประ)
+        // 1. ดึงข้อมูล 6 อย่างตามที่กำหนด (ถ้าไม่มีจะเป็นช่องว่าง)
         const empName = data.empName || "";
         const empAddr = data.empAddress || "";
         const empCardId = data.empCardId || "";
@@ -269,27 +270,28 @@ export const generateReceipt = async (data) => {
         const companyAddr = data.companyAddress || "";
         const companyTaxId = data.companyTaxId || "";
 
-        // ส่วนข้าพเจ้า (ผู้รับเงิน)
+        // --- เริ่มจัด Layout ตามบรรทัด ---
+        // บรรทัด 1: ชื่อพนักงาน
         doc.text("ข้าพเจ้า", 25, startY);
         doc.text(empName, 45, startY);
         
-        doc.text("ที่อยู่", 110, startY);
-        doc.text(empAddr.substring(0, 40), 125, startY); 
-
-        doc.text("ตำบล/อำเภอ/จังหวัด", 25, startY + lineH);
-        doc.text(empAddr.length > 40 ? empAddr.substring(40) : "", 65, startY + lineH);
+        // บรรทัด 2: ที่อยู่พนักงาน (จัดวางยาวๆ ด้านซ้ายบรรทัดเดียว)
+        doc.text("ที่อยู่", 25, startY + lineH);
+        doc.text(empAddr, 40, startY + lineH); 
         
+        // บรรทัด 3: เลขบัตรประชาชน
         doc.text("เลขประจำตัวบัตรประชาชน", 25, startY + (lineH * 2));
         doc.text(empCardId, 75, startY + (lineH * 2));
-        doc.text("ได้รับเงินจาก", 110, startY + (lineH * 2));
 
-        // ส่วนบริษัท (ผู้จ่าย)
-        doc.text("บริษัท", 25, startY + (lineH * 3));
-        doc.text(companyName, 45, startY + (lineH * 3));
+        // บรรทัด 4: ได้รับเงินจากบริษัท (ชื่อบริษัท)
+        doc.text("ได้รับเงินจาก บริษัท", 25, startY + (lineH * 3));
+        doc.text(companyName, 65, startY + (lineH * 3));
         
+        // บรรทัด 5: ที่อยู่บริษัท
         doc.text("ที่อยู่บริษัท", 25, startY + (lineH * 4));
         doc.text(companyAddr, 50, startY + (lineH * 4));
 
+        // บรรทัด 6: เลขประจำตัวผู้เสียภาษี
         doc.text("เลขประจำตัวผู้เสียภาษี", 25, startY + (lineH * 5));
         doc.text(companyTaxId, 70, startY + (lineH * 5));
 
@@ -360,7 +362,7 @@ export const generateReceipt = async (data) => {
 };
 
 // ==========================================
-// 4. ฟังก์ชันสร้างรายงานเที่ยววิ่ง (หัวสีส้ม/เขียว/ฟ้า, พื้นหลังขาว, หยุดสีแดง)
+// 4. ฟังก์ชันสร้างรายงานเที่ยววิ่ง (หัวสีส้ม/เขียว/ฟ้า, พื้นหลังข้อมูลขาว, หยุดสีแดง)
 // ==========================================
 export const generateTripReport = async (pdfData, type, monthLabel) => {
     try {
@@ -450,7 +452,7 @@ export const generateTripReport = async (pdfData, type, monthLabel) => {
 };
 
 // ==========================================
-// 5. ฟังก์ชันสร้างรายงานบัญชี (Ledger) - แก้สีหัวตารางและพื้นขาว
+// 5. ฟังก์ชันสร้างรายงานบัญชี (Ledger) - แก้สีหัวตารางเทาอ่อน พื้นหลังเนื้อหาสีขาว
 // ==========================================
 export const generateLedger = async (summary, list) => {
     try {
