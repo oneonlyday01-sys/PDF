@@ -21,31 +21,50 @@ const initDoc = () => {
 };
 
 // ==========================================
-// 1. ฟังก์ชันสร้างสลิปเงินเดือน (รองรับทั้งแบบเดี่ยวและแบบ Array)
+// 1. ฟังก์ชันสร้างสลิปเงินเดือน (1 หน้า 2 สลิป บน-ล่าง)
 // ==========================================
 export const generatePayslip = async (dataArray) => {
     try {
         const doc = initDoc();
         
         dataArray.forEach((data, index) => {
-            if (index > 0) doc.addPage();
+            // คำนวณตำแหน่ง: 
+            // - ถ้า index เป็นเลขคู่ (0, 2, 4...) => อยู่ด้านบน (Offset = 0)
+            // - ถ้า index เป็นเลขคี่ (1, 3, 5...) => อยู่ด้านล่าง (Offset = 148.5 มม. ครึ่ง A4)
+            const isBottom = index % 2 !== 0;
+            const yOffset = isBottom ? 148.5 : 0;
 
+            // เพิ่มหน้าใหม่เมื่อเป็นรายการด้านบน (Top) และไม่ใช่คนแรกสุด
+            if (index > 0 && !isBottom) {
+                doc.addPage();
+            }
+
+            // ถ้าเป็นสลิปด้านล่าง ให้วาดเส้นปะตรงกลางสำหรับตัด
+            if (isBottom) {
+                doc.setLineDash([3, 3], 0); // เส้นปะ
+                doc.setDrawColor(150);      // สีเทา
+                doc.line(5, 148.5, 205, 148.5); // วาดเส้นตัดแบ่งครึ่ง
+                doc.setLineDash([]);        // กลับมาเป็นเส้นทึบ
+                doc.setDrawColor(0);        // สีดำ
+            }
+
+            // --- เริ่มวาดเนื้อหา (ทุกพิกัด Y จะบวกด้วย yOffset) ---
             doc.setFontSize(16);
             // --- ส่วนหัวเอกสาร ---
-            doc.text("ใบแจ้งเงินเดือน / Salary Slip", 105, 20, { align: "center" });
+            doc.text("ใบแจ้งเงินเดือน / Salary Slip", 105, 20 + yOffset, { align: "center" });
             
             doc.setFontSize(12);
-            doc.text(`ชื่อ-นามสกุล: ${data.name || '-'}`, 20, 35);
-            doc.text(`ตำแหน่ง: ${data.pos || '-'}`, 20, 42);
-            doc.text(`งวดที่: ${data.period || '-'} ประจำเดือน: ${data.month}/${data.year}`, 190, 35, { align: "right" });
-            doc.text(`วันที่พิมพ์: ${new Date().toLocaleDateString('th-TH')}`, 190, 42, { align: "right" });
+            doc.text(`ชื่อ-นามสกุล: ${data.name || '-'}`, 20, 35 + yOffset);
+            doc.text(`ตำแหน่ง: ${data.pos || '-'}`, 20, 42 + yOffset);
+            doc.text(`งวดที่: ${data.period || '-'} ประจำเดือน: ${data.month}/${data.year}`, 190, 35 + yOffset, { align: "right" });
+            doc.text(`วันที่พิมพ์: ${new Date().toLocaleDateString('th-TH')}`, 190, 42 + yOffset, { align: "right" });
 
             // --- เส้นคั่น ---
             doc.setLineWidth(0.5);
-            doc.line(20, 48, 190, 48);
+            doc.line(20, 48 + yOffset, 190, 48 + yOffset);
 
             // --- รายละเอียดเงินเดือน ---
-            let yPos = 58;
+            let yPos = 58 + yOffset;
             doc.setFontSize(14);
             doc.text("รายการรับ (Income)", 20, yPos);
             doc.text("รายการหัก (Deduction)", 110, yPos);
@@ -140,7 +159,6 @@ export const generateSalarySummary = async (dataArray) => {
         
         // Loop Rows
         dataArray.forEach((row) => {
-            // row format from index.html map: [period, month, year, emp_id, name, pos, salary, incentive, other, totalInc, totalDed, net]
             const name = row[4];
             const pos = row[5];
             const totalInc = row[9];
@@ -157,7 +175,7 @@ export const generateSalarySummary = async (dataArray) => {
             doc.text(totalInc, 110, y + 7, { align: "right" });
             doc.text(totalDed, 140, y + 7, { align: "right" });
             doc.text(net, 170, y + 7, { align: "right" });
-            doc.line(10, y + 10, 200, y + 10); // line bottom
+            doc.line(10, y + 10, 200, y + 10);
             y += 10;
         });
 
@@ -209,7 +227,7 @@ export const generateReceipt = async (data) => {
         doc.text("ยอดจ่ายสุทธิ", 25, y);
         doc.text(Number(data.net).toLocaleString(), 185, y, { align: "right" });
         doc.line(20, y+5, 190, y+5);
-        doc.line(20, y+6, 190, y+6); // Double line
+        doc.line(20, y+6, 190, y+6);
 
         y += 40;
         doc.setFontSize(12);
@@ -250,7 +268,7 @@ export const generateTripReport = async (pdfData, type, monthLabel) => {
         doc.setFontSize(10);
         doc.setFillColor(220, 220, 220);
         doc.rect(startX, startY, nameWidth, 10, 'F');
-        doc.rect(startX, startY, nameWidth, 10); // border
+        doc.rect(startX, startY, nameWidth, 10);
         doc.text("ชื่อพนักงาน", startX + 2, startY + 6);
 
         for (let i = 1; i <= 15; i++) {
@@ -292,7 +310,7 @@ export const generateTripReport = async (pdfData, type, monthLabel) => {
             y += 10;
             if (y > 180) {
                 doc.addPage();
-                y = 20; // Reset y for new page
+                y = 20;
             }
         });
 
@@ -305,7 +323,7 @@ export const generateTripReport = async (pdfData, type, monthLabel) => {
 };
 
 // ==========================================
-// 5. ฟังก์ชันสร้างรายงานบัญชี (Ledger) - ปรับปรุงใหม่ (มีหมวดหมู่ + ตีเส้นตาราง)
+// 5. ฟังก์ชันสร้างรายงานบัญชี (Ledger) - (เวอร์ชันมีหมวดหมู่ + ตีเส้นตาราง)
 // ==========================================
 export const generateLedger = async (summary, list) => {
     try {
@@ -325,23 +343,21 @@ export const generateLedger = async (summary, list) => {
 
         // Table Header
         let y = 65;
-        doc.setFillColor(220); // พื้นหลังสีเทาอ่อน
-        doc.rect(20, y, 170, 10, 'F'); // เติมสี
-        doc.rect(20, y, 170, 10);      // เส้นกรอบ
+        doc.setFillColor(220);
+        doc.rect(20, y, 170, 10, 'F');
+        doc.rect(20, y, 170, 10);
 
-        // Header Text
         doc.setFontSize(10);
         doc.text("วันที่", 25, y + 7);
-        doc.text("หมวดหมู่", 50, y + 7); // เพิ่มคอลัมน์หมวดหมู่
-        doc.text("รายการ", 85, y + 7);   // ขยับตำแหน่งรายการ
+        doc.text("หมวดหมู่", 50, y + 7);
+        doc.text("รายการ", 85, y + 7);
         doc.text("รับ", 160, y + 7, { align: "right" });
         doc.text("จ่าย", 185, y + 7, { align: "right" });
 
-        // Header Vertical Lines
-        doc.line(45, y, 45, y + 10);  // หลังวันที่
-        doc.line(80, y, 80, y + 10);  // หลังหมวดหมู่ (เส้นใหม่)
-        doc.line(140, y, 140, y + 10); // หลังรายการ
-        doc.line(165, y, 165, y + 10); // หลังรายรับ
+        doc.line(45, y, 45, y + 10);
+        doc.line(80, y, 80, y + 10);
+        doc.line(140, y, 140, y + 10);
+        doc.line(165, y, 165, y + 10);
 
         y += 10;
 
@@ -352,19 +368,16 @@ export const generateLedger = async (summary, list) => {
                 y = 20;
             }
 
-            // Draw Row Rectangle (Grid Effect)
             doc.rect(20, y, 170, 10);
 
-            // Draw Vertical Lines (เพื่อให้ตรงกับ Header)
             doc.line(45, y, 45, y + 10);
             doc.line(80, y, 80, y + 10);
             doc.line(140, y, 140, y + 10);
             doc.line(165, y, 165, y + 10);
 
-            // Text Content
             doc.text(item.date, 25, y + 7);
-            doc.text(item.category || "-", 50, y + 7); // แสดงหมวดหมู่
-            doc.text(item.description.substring(0, 35), 85, y + 7); // ตัดคำถ้าลายาวเกินไป
+            doc.text(item.category || "-", 50, y + 7);
+            doc.text(item.description.substring(0, 35), 85, y + 7);
             
             if(item.income > 0) {
                  doc.setTextColor(0, 128, 0);
@@ -380,7 +393,7 @@ export const generateLedger = async (summary, list) => {
                  doc.text("-", 185, y + 7, { align: "right" });
             }
             
-            doc.setTextColor(0); // Reset color
+            doc.setTextColor(0);
             y += 10;
         });
 
@@ -392,7 +405,7 @@ export const generateLedger = async (summary, list) => {
 };
 
 // ==========================================
-// 6. ฟังก์ชันเดิมที่มีอยู่แล้ว (generateSalarySlipPDF)
+// 6. ฟังก์ชันเดิมที่มีอยู่แล้ว
 // ==========================================
 export const generateSalarySlipPDF = async (data) => {
     return generatePayslip([data]);
