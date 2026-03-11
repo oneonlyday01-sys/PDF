@@ -129,112 +129,115 @@
 
             <!-- DAILY RECORD -->
             <div id="daily" class="page">
-                <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <h2 class="text-2xl md:text-3xl font-bold text-slate-800">บันทึกกะเข้างาน / OT</h2>
-                    <div class="bg-white p-2 rounded-xl shadow-sm border border-slate-200 flex items-center">
-                        <label class="text-sm font-bold text-slate-600 mr-3 ml-2">วันที่:</label>
-                        <input type="date" id="d-date" class="form-control h-10 border-none bg-slate-50 !ring-0 focus:bg-white" onchange="handleDateChange()">
-                    </div>
-                </div>
-                
+                <div class="mb-6"><h2 class="text-2xl md:text-3xl font-bold text-slate-800">บันทึกกะเข้างาน / OT</h2></div>
                 <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
                     
-                    <!-- 1. Scrollable Emp List -->
-                    <div class="xl:col-span-3 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col xl:sticky xl:top-4 h-[500px] xl:h-[calc(100vh-140px)]">
-                        <div class="p-3 border-b bg-slate-50">
-                            <input type="text" id="d-emp-search" placeholder="ค้นหาพนักงาน..." class="form-control h-10 text-sm" onkeyup="renderDailyEmpList(this.value)">
+                    <!-- Left: Scrollable Employee List -->
+                    <div class="xl:col-span-3 card p-0 flex flex-col h-[750px] border border-slate-200">
+                        <div class="p-4 bg-slate-50 border-b">
+                            <h3 class="font-bold text-slate-700 mb-3"><i class="fa-solid fa-list mr-2 text-blue-500"></i>รายชื่อพนักงาน</h3>
+                            <input type="text" id="d-emp-search" placeholder="ค้นหาชื่อ..." class="form-control h-10 text-sm" oninput="renderDailyEmpList(this.value)">
+                            <input type="hidden" id="d-emp">
                         </div>
-                        <div id="d-emp-list" class="overflow-y-auto flex-1 p-0 divide-y divide-slate-100">
-                            <!-- JS Will Render List Here -->
-                        </div>
-                        <input type="hidden" id="d-emp" onchange="selectDailyEmp()">
+                        <div id="d-emp-list-container" class="flex-1 overflow-y-auto divide-y divide-slate-100"></div>
                     </div>
 
-                    <!-- 2. Form Area -->
-                    <div class="xl:col-span-5 space-y-4 xl:max-h-[calc(100vh-140px)] xl:overflow-y-auto xl:pr-2" id="daily-form-area" style="opacity: 0.5; pointer-events: none;">
-                        <input type="hidden" id="d-record-id">
-                        
-                        <!-- Header Status -->
-                        <div id="emp-stats-area" class="hidden">
-                            <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex justify-between items-center">
-                                <div>
-                                    <div id="d-pos-display" class="font-bold text-indigo-800 text-lg"></div>
-                                    <div class="text-xs text-indigo-600 mt-1"><i class="fa-solid fa-chart-line mr-1"></i> สะสม: <span id="stat-days" class="font-bold">0</span> วัน | ยอดรวม <span id="stat-total" class="font-bold">0</span> บาท</div>
+                    <!-- Middle: Form Area -->
+                    <div class="xl:col-span-5 space-y-6">
+                        <div class="card border-0 shadow-sm p-4">
+                            <label class="block text-sm font-bold text-slate-700 mb-2">วันที่ทำงาน</label>
+                            <input type="date" id="d-date" class="form-control" onchange="handleDailyDateChange()">
+                        </div>
+
+                        <div id="emp-stats-area" class="hidden stats-card">
+                            <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h4 class="text-sm font-bold text-indigo-800 flex items-center"><i class="fa-solid fa-chart-line mr-2"></i> สรุปยอดสะสม (งวดปัจจุบัน)</h4>
+                                    <div id="d-pos-display" class="text-xs font-bold text-blue-600 bg-white px-2 py-1 rounded-md shadow-sm"></div>
                                 </div>
-                                <div id="stat-period-label" class="text-xs bg-indigo-200 text-indigo-800 px-2 py-1 rounded-lg font-bold">งวด: -</div>
+                                <div class="grid grid-cols-2 gap-3 text-sm">
+                                    <div class="bg-white p-2 rounded-lg shadow-sm"><div class="text-slate-500 text-[10px] mb-1">ทำงาน (วัน)</div><div class="font-bold text-slate-800" id="stat-days">0</div></div>
+                                    <div class="bg-white p-2 rounded-lg shadow-sm"><div class="text-slate-500 text-[10px] mb-1">OT สะสม</div><div class="font-bold text-orange-600" id="stat-ot">0</div></div>
+                                    <div class="bg-white p-2 rounded-lg shadow-sm"><div class="text-slate-500 text-[10px] mb-1">ค่าเที่ยว</div><div class="font-bold text-purple-600" id="stat-trip">0</div></div>
+                                    <div class="bg-white p-2 rounded-lg shadow-sm border-l-4 border-indigo-500"><div class="text-slate-500 text-[10px] mb-1">รายรับรวม</div><div class="font-bold text-indigo-700" id="stat-total">0</div></div>
+                                </div>
+                                <div class="flex justify-between items-center mt-3 text-[10px] text-slate-500 px-1"><span><i class="fa-solid fa-triangle-exclamation text-red-400 mr-1"></i> ยอดหักสะสม: <span class="text-red-500 font-bold" id="stat-deduct">0</span></span><span id="stat-period-label">งวด: -</span></div>
                             </div>
                         </div>
 
-                        <!-- Form Tabs -->
-                        <div class="flex space-x-2 bg-slate-100 p-1 rounded-xl">
-                            <button id="tab-btn-daily-1" onclick="switchDailyTab(1)" class="flex-1 py-2.5 rounded-lg text-sm font-bold bg-white text-blue-600 shadow-sm transition">กะทำงาน & ค่าเที่ยว</button>
-                            <button id="tab-btn-daily-2" onclick="switchDailyTab(2)" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-slate-500 hover:text-slate-700 hover:bg-white/50 transition">OT & อื่นๆ</button>
-                        </div>
-
-                        <!-- Tab 1: Shift & Trip -->
-                        <div id="daily-tab-1" class="space-y-4">
-                            <div class="card">
-                                 <h3 class="font-bold text-slate-700 mb-4 flex items-center"><i class="fa-regular fa-clock mr-2 text-blue-500"></i> กะทำงาน & ค่าแรง</h3>
-                                 <div class="grid grid-cols-2 gap-4 mb-4">
-                                     <label class="cursor-pointer"><input type="radio" name="d-shift" value="Day" class="shift-radio hidden" checked><div class="border-2 border-slate-100 rounded-xl p-3 text-center hover:bg-slate-50 transition relative"><i class="fa-solid fa-sun text-xl text-orange-400 mb-1 block"></i><span class="font-bold text-sm">กลางวัน</span><i class="fa-solid fa-circle-check absolute top-1 right-1 text-blue-500 opacity-0 transform scale-50 transition check-icon"></i></div></label>
-                                     <label class="cursor-pointer"><input type="radio" name="d-shift" value="Night" class="shift-radio hidden"><div class="border-2 border-slate-100 rounded-xl p-3 text-center hover:bg-slate-50 transition relative"><i class="fa-solid fa-moon text-xl text-indigo-400 mb-1 block"></i><span class="font-bold text-sm">กลางคืน</span><i class="fa-solid fa-circle-check absolute top-1 right-1 text-blue-500 opacity-0 transform scale-50 transition check-icon"></i></div></label>
-                                 </div>
-                                 <div class="mb-3"><label class="text-xs font-bold text-slate-500 mb-1 block">ค่าแรง (บาท)</label><input type="number" id="d-wage" class="form-control text-lg font-bold text-slate-700" placeholder="0.00" oninput="calcDaily()"></div>
-                                 <div><label class="text-xs font-bold text-slate-400 mb-1 block">หมายเหตุ</label><input type="text" id="d-remarks" class="form-control text-sm" placeholder="เช่น มาสาย, กลับก่อน"></div>
-                            </div>
+                        <div id="daily-form-area" class="opacity-50 pointer-events-none transition-all duration-300">
+                            <input type="hidden" id="d-record-id">
                             
-                            <!-- Income Cluster -->
-                            <div class="card border-l-4 border-l-purple-500">
-                                <h3 class="font-bold text-purple-700 mb-4 flex items-center"><i class="fa-solid fa-truck-fast mr-2"></i> ค่าเที่ยวเหมาจ่าย</h3>
-                                <div class="grid grid-cols-2 gap-4 mb-4">
-                                    <div><label class="text-xs font-bold text-slate-500 mb-1 block">จำนวนเที่ยว</label><input type="number" id="d-trip-count" class="form-control" placeholder="0" oninput="calcDaily()"></div>
-                                    <div><label class="text-xs font-bold text-slate-500 mb-1 block">เกณฑ์ (0=คิดทุกเที่ยว)</label><input type="number" id="d-trip-threshold" class="form-control" placeholder="0" oninput="calcDaily()"></div>
-                                    <div><label class="text-xs font-bold text-slate-500 mb-1 block">เรทต่อเที่ยว (บาท)</label><input type="number" id="d-trip-rate" class="form-control" value="10" oninput="calcDaily()"></div>
-                                </div>
-                                <div class="bg-purple-50 p-3 rounded-lg flex justify-between items-center border border-purple-100">
-                                    <span class="text-xs text-purple-600 font-bold" id="trip-threshold-hint">-</span>
-                                    <span class="font-bold text-purple-700 text-lg" id="d-trip-bonus-disp">0.00</span>
-                                    <input type="hidden" id="d-trip-bonus">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Tab 2: OT & Others -->
-                        <div id="daily-tab-2" class="space-y-4 hidden">
-                            <div class="card border-orange-100 bg-orange-50/30">
-                                <h3 class="font-bold text-orange-700 mb-4 text-sm uppercase tracking-wider"><i class="fa-solid fa-business-time mr-2"></i> ล่วงเวลา (OT)</h3>
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div><label class="text-xs font-bold text-slate-500 mb-1 block">ชั่วโมง</label><input type="number" id="d-ot-hours" class="form-control" oninput="calcDaily()"></div>
-                                    <div><label class="text-xs font-bold text-slate-500 mb-1 block">บาท/ชม.</label><input type="number" id="d-ot-rate" class="form-control" value="50" oninput="calcDaily()"></div>
-                                </div>
-                                <div class="mt-3 flex justify-between items-center border-t border-orange-200 pt-2"><span class="text-sm text-orange-600 font-bold">รวม OT</span><span id="d-ot-total-disp" class="text-xl font-bold text-orange-600">0.00</span><input type="hidden" id="d-ot-total"></div>
+                            <!-- Tabs Navigation -->
+                            <div class="bg-slate-200 p-1 rounded-xl flex gap-1 mb-4">
+                                <button onclick="switchDailyTab('shift', this)" id="btn-tab-shift" class="daily-tab-btn flex-1 py-2.5 text-sm font-bold rounded-lg bg-white text-blue-600 shadow-sm transition">บันทึกกะ / รายได้</button>
+                                <button onclick="switchDailyTab('ot', this)" id="btn-tab-ot" class="daily-tab-btn flex-1 py-2.5 text-sm font-bold rounded-lg text-slate-500 hover:bg-white/50 transition">บันทึก OT</button>
                             </div>
 
-                            <div class="card border-l-4 border-l-green-500">
-                                <div class="flex justify-between items-center mb-4">
-                                    <h3 class="font-bold text-green-700 text-sm uppercase"><i class="fa-solid fa-plus-circle mr-2"></i> รายได้อื่นๆ</h3>
-                                    <button onclick="addDynamicIncomeRow()" class="text-xs bg-green-100 text-green-700 px-3 py-1.5 rounded-lg font-bold hover:bg-green-200">+ เพิ่มรายการ</button>
+                            <!-- Tab Content: Shift -->
+                            <div id="d-sec-shift" class="space-y-4">
+                                <div class="card p-5">
+                                    <h3 class="font-bold text-slate-700 mb-4 flex items-center text-sm"><i class="fa-regular fa-clock mr-2 text-blue-500"></i> ช่วงเวลาทำงาน</h3>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <label class="cursor-pointer"><input type="radio" name="d-shift" value="Day" class="shift-radio hidden" checked><div class="border border-slate-200 rounded-xl p-3 text-center hover:bg-slate-50 transition relative"><i class="fa-solid fa-sun text-xl text-orange-400 mb-1 block"></i><span class="font-bold text-sm">กะกลางวัน</span><i class="fa-solid fa-circle-check absolute top-2 right-2 text-blue-500 opacity-0 transform scale-50 transition check-icon"></i></div></label>
+                                        <label class="cursor-pointer"><input type="radio" name="d-shift" value="Night" class="shift-radio hidden"><div class="border border-slate-200 rounded-xl p-3 text-center hover:bg-slate-50 transition relative"><i class="fa-solid fa-moon text-xl text-indigo-400 mb-1 block"></i><span class="font-bold text-sm">กะกลางคืน</span><i class="fa-solid fa-circle-check absolute top-2 right-2 text-blue-500 opacity-0 transform scale-50 transition check-icon"></i></div></label>
+                                    </div>
+                                    
+                                    <div class="mt-4 pt-4 border-t border-slate-100">
+                                        <div class="mb-3"><label class="text-xs font-bold text-slate-500 mb-1 block">ค่าแรงรายวัน (บาท)</label><input type="number" id="d-wage" class="form-control text-lg font-bold text-slate-700" placeholder="0" oninput="calcDaily()"></div>
+                                        <div><label class="text-xs font-bold text-slate-400 mb-1 block">หมายเหตุ</label><input type="text" id="d-remarks" class="form-control text-sm" placeholder="เช่น มาสาย, กลับก่อน"></div>
+                                    </div>
                                 </div>
-                                <div id="dynamic-income-list" class="space-y-2">
-                                    <!-- Dynamic rows here -->
+
+                                <div class="card p-5 border-l-4 border-l-purple-500">
+                                    <h3 class="font-bold text-purple-700 mb-4 text-sm">ค่าเที่ยว & รายได้อื่นๆ</h3>
+                                    <div class="space-y-4">
+                                        <div class="grid grid-cols-3 gap-3">
+                                            <div><label class="text-[10px] font-bold text-slate-500 mb-1 block">จำนวนเที่ยว</label><input type="number" id="d-trip-count" class="form-control text-sm px-2" oninput="calcDaily()"></div>
+                                            <div><label class="text-[10px] font-bold text-slate-500 mb-1 block">เกณฑ์ (0=เหมา)</label><input type="number" id="d-trip-threshold" class="form-control text-sm px-2" value="0" oninput="calcDaily()"></div>
+                                            <div><label class="text-[10px] font-bold text-slate-500 mb-1 block">เรท/ส่วนต่าง</label><input type="number" id="d-trip-rate" class="form-control text-sm px-2" value="10" oninput="calcDaily()"></div>
+                                        </div>
+                                        <p class="text-xs text-right text-purple-500 font-medium h-4" id="trip-threshold-hint"></p>
+                                        <input type="hidden" id="d-trip-bonus">
+                                        
+                                        <div class="border-t pt-3 border-slate-100">
+                                            <div class="flex justify-between items-center mb-2"><h4 class="text-xs font-bold text-slate-600">รายได้อื่นๆ แบบระบุเอง</h4><button type="button" onclick="addOtherIncomeRow()" class="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded hover:bg-slate-200 font-bold">+ เพิ่มรายการ</button></div>
+                                            <div id="d-other-income-container" class="space-y-2"></div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div id="dyn-empty-state" class="text-center text-xs text-slate-400 py-2 italic">ไม่มีรายการรายได้อื่นๆ</div>
+
+                                <div class="card p-5 border-l-4 border-l-red-500">
+                                    <h3 class="font-bold text-red-600 mb-3 text-sm">หักเงิน</h3>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div><label class="text-xs font-bold text-red-400 mb-1 block">เบิกล่วงหน้า</label><input type="number" id="d-deduct-advance" class="form-control text-red-600 font-medium" oninput="calcDaily()"></div>
+                                        <div><label class="text-xs font-bold text-red-400 mb-1 block">ขาด/ลา/สาย</label><input type="number" id="d-deduct-absence" class="form-control text-red-600 font-medium" oninput="calcDaily()"></div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div class="card border-l-4 border-l-red-500">
-                                <h3 class="font-bold text-red-600 mb-3"><i class="fa-solid fa-minus-circle mr-2"></i> หักเงิน</h3>
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div><label class="text-xs font-bold text-red-400 mb-1 block">เบิกล่วงหน้า</label><input type="number" id="d-deduct-advance" class="form-control text-red-600 font-medium" oninput="calcDaily()"></div>
-                                    <div><label class="text-xs font-bold text-red-400 mb-1 block">ขาด/ลา</label><input type="number" id="d-deduct-absence" class="form-control text-red-600 font-medium" oninput="calcDaily()"></div>
+                            <!-- Tab Content: OT -->
+                            <div id="d-sec-ot" class="hidden space-y-4">
+                                <div class="card border-orange-200 bg-orange-50/50 p-5 min-h-[300px]">
+                                    <h3 class="font-bold text-orange-700 mb-6 flex items-center"><i class="fa-solid fa-clock-rotate-left mr-2"></i> บันทึกเวลาล่วงหน้า (OT)</h3>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div><label class="text-sm font-bold text-slate-600 mb-2 block">จำนวนชั่วโมง</label><input type="number" id="d-ot-hours" class="form-control" placeholder="0" oninput="calcDaily()"></div>
+                                        <div><label class="text-sm font-bold text-slate-600 mb-2 block">เรท (บาท/ชม.)</label><input type="number" id="d-ot-rate" class="form-control" value="50" oninput="calcDaily()"></div>
+                                    </div>
+                                    <div class="mt-8 bg-white p-4 rounded-xl border border-orange-100 flex justify-between items-center shadow-sm">
+                                        <span class="text-slate-600 font-bold">รวมเงิน OT</span>
+                                        <span id="d-ot-total-disp" class="text-3xl font-bold text-orange-600">0.00</span>
+                                        <input type="hidden" id="d-ot-total">
+                                    </div>
                                 </div>
                             </div>
+
                         </div>
                     </div>
 
-                    <!-- 3. Summary & Today's List -->
-                    <div class="xl:col-span-4 flex flex-col space-y-4 xl:sticky xl:top-4 h-[700px] xl:h-[calc(100vh-140px)]">
-                        <!-- Summary -->
-                        <div class="bg-slate-900 text-white rounded-2xl p-5 shadow-2xl relative overflow-hidden shrink-0">
+                    <!-- Right: Summary & List -->
+                    <div class="xl:col-span-4 flex flex-col h-[750px] space-y-4">
+                        <div class="bg-slate-900 text-white rounded-2xl p-6 shadow-xl relative overflow-hidden flex-shrink-0">
                             <div class="absolute top-0 right-0 p-4 opacity-10"><i class="fa-solid fa-wallet text-8xl"></i></div>
                             <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-4">สรุปยอดวันนี้</h3>
                             <div class="space-y-2 mb-4 text-sm">
@@ -243,25 +246,18 @@
                                 <div class="flex justify-between"><span class="text-purple-400">ค่าเที่ยว/อื่นๆ</span><span id="sum-other-all" class="font-medium">0.00</span></div>
                                 <div class="flex justify-between border-t border-slate-700 pt-2"><span class="text-red-400">หัก</span><span id="sum-deduct" class="font-medium">0.00</span></div>
                             </div>
-                            <div class="text-right"><span class="text-xs text-slate-400 block mb-1">สุทธิ</span><span class="text-3xl font-bold tracking-tight text-white" id="d-net-total">0.00</span></div>
-                            <div class="flex gap-2 mt-4">
+                            <div class="text-right"><span class="text-xs text-slate-400 block mb-1">สุทธิ</span><span class="text-4xl font-bold tracking-tight text-white" id="d-net-total">0.00</span></div>
+                            <div class="flex gap-2 mt-5">
                                 <button onclick="resetDailyForm(false)" class="w-1/3 bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl font-medium text-sm transition">ล้างค่า</button>
-                                <button onclick="saveDaily()" id="btn-save-daily" class="w-2/3 bg-blue-500 hover:bg-blue-400 text-white py-3 rounded-xl font-bold shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>บันทึกรายการ</button>
+                                <button onclick="saveDaily()" id="btn-save-daily" class="w-2/3 bg-blue-500 hover:bg-blue-400 text-white py-3 rounded-xl font-bold shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed text-lg" disabled>บันทึก</button>
                             </div>
                         </div>
-                        
-                        <!-- Today List (Scrollable) -->
+
                         <div class="card p-0 flex flex-col flex-1 overflow-hidden border border-slate-200">
-                            <div class="bg-slate-50 px-4 py-3 border-b flex justify-between items-center shrink-0">
-                                <span class="font-bold text-slate-700 text-sm"><i class="fa-solid fa-list-check mr-2"></i> รายการวันนี้</span>
-                                <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-bold" id="daily-count-badge">0</span>
-                            </div>
-                            <div id="daily-list" class="overflow-y-auto flex-1 divide-y divide-slate-100">
-                                <!-- JS will render -->
-                            </div>
+                            <div class="bg-slate-50 px-4 py-3 border-b flex justify-between items-center flex-shrink-0"><span class="font-bold text-slate-700 text-sm"><i class="fa-solid fa-list-check mr-2 text-blue-500"></i>รายการวันนี้</span><span class="text-xs bg-slate-200 text-slate-600 px-2 py-1 rounded-full" id="daily-count-badge">0</span></div>
+                            <div id="daily-list" class="flex-1 overflow-y-auto divide-y divide-slate-100"></div>
                         </div>
                     </div>
-
                 </div>
             </div>
 
@@ -300,9 +296,9 @@
             <!-- PAYROLL -->
             <div id="payroll" class="page">
                 <h2 class="text-2xl font-bold mb-6 text-slate-800">คำนวณเงินเดือน</h2>
-                <div class="card mb-6 bg-blue-50/50 border-blue-100">
+                <div class="card mb-6 bg-blue-50/50 border-blue-100 p-4 md:p-6">
                     <div class="flex flex-wrap gap-4 items-end">
-                         <div class="w-28">
+                         <div class="flex-1 min-w-[80px] max-w-[120px]">
                              <label class="text-xs font-bold text-blue-800 mb-1 block">เดือน</label>
                              <select id="pay-month" class="form-control border-blue-200 cursor-pointer" onchange="selectPayrollEmp()"></select>
                          </div>
@@ -310,7 +306,7 @@
                              <label class="text-xs font-bold text-blue-800 mb-1 block">ปี</label>
                              <select id="pay-year" class="form-control border-blue-200 cursor-pointer" onchange="selectPayrollEmp()"></select>
                          </div>
-                         <div class="flex-1 min-w-[180px]">
+                         <div class="w-48">
                              <label class="text-xs font-bold text-blue-800 mb-1 block">งวด</label>
                              <select id="pay-period" class="form-control bg-blue-600 text-white border-blue-600 font-bold cursor-pointer text-base" onchange="selectPayrollEmp()"></select>
                          </div>
@@ -337,7 +333,7 @@
                                 <div><label class="text-xs font-bold text-slate-400 mb-1 block">ประกันสังคม</label><input id="inp-p-sso" type="number" class="form-control text-red-600 font-medium" readonly></div>
                                 <div><label class="text-xs font-bold text-slate-400 mb-1 block">ภาษี</label><input id="inp-p-tax" type="number" class="form-control text-red-600" oninput="calcPayroll()"></div>
                                 <div><label class="text-xs font-bold text-slate-400 mb-1 block">เบิกล่วงหน้า</label><input id="inp-p-advance" type="number" class="form-control text-red-600 font-medium" readonly></div>
-                                <div><label class="text-xs font-bold text-blue-600 mb-1 block">กยศ.</label><input id="inp-p-student-loan" type="number" class="form-control text-blue-600 font-bold bg-blue-50/50 border-blue-200" oninput="calcPayroll()" placeholder="0"></div>
+                                <div><label class="text-xs font-bold text-slate-400 mb-1 block">กยศ.</label><input id="inp-p-student-loan" type="number" class="form-control text-red-600" oninput="calcPayroll()" placeholder="0"></div>
                             </div>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-4">
                                 <div><label class="text-xs font-bold text-red-600 mb-1 block">ค่าน้ำ (บาท)</label><input id="inp-p-water" type="number" class="form-control text-red-600 border-red-200 bg-red-50/50" oninput="calcPayroll()" placeholder="0"></div>
@@ -352,13 +348,13 @@
                              <div class="flex justify-between mb-6 pb-4 border-b border-slate-700"><span class="text-slate-300">รวมหัก</span><span class="text-red-400 font-bold" id="disp-p-deduct">0.00</span></div>
                              <div class="text-right mb-8"><span class="text-xs text-slate-400 block mb-1">ยอดสุทธิ (Net Pay)</span><span class="text-4xl font-bold" id="disp-p-net">0.00</span></div>
                              <button onclick="savePayroll()" id="btn-save-payroll" class="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-xl font-bold shadow-lg transition disabled:opacity-50 text-lg" disabled>ยืนยันรายการ</button>
-                             <button onclick="resetPayrollForm()" class="w-full mt-3 bg-slate-800 text-slate-400 py-2 rounded-xl text-sm hover:text-white transition">ยกเลิก</button>
+                             <button onclick="resetPayrollForm()" class="w-full mt-3 bg-slate-800 text-slate-400 py-2 rounded-xl text-sm">ยกเลิก</button>
                         </div>
                     </div>
                 </div>
-                <div class="mt-8 card p-0 overflow-hidden border border-slate-200">
-                    <div class="p-4 border-b bg-slate-50 flex flex-wrap justify-between items-center gap-3"><h3 class="font-bold text-slate-700"><i class="fa-solid fa-hourglass-half mr-2 text-orange-500"></i> รายการที่รอบันทึก</h3><button onclick="savePayrollBatchToDB()" class="bg-slate-800 text-white px-4 py-2 rounded-lg font-bold shadow text-sm hover:bg-slate-700 transition"><i class="fa-solid fa-cloud-arrow-up mr-2"></i> บันทึกเข้าระบบทั้งหมด</button></div>
-                    <div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead class="bg-white border-b text-slate-500 font-semibold"><tr><th class="p-4">พนักงาน</th><th class="p-4 text-right">เงินเดือน</th><th class="p-4 text-right">เพิ่ม</th><th class="p-4 text-right">หัก</th><th class="p-4 text-right text-blue-600">กยศ.</th><th class="p-4 text-right text-slate-800">สุทธิ</th><th class="p-4 text-center">จัดการ</th></tr></thead><tbody id="table-payroll-recorded" class="divide-y divide-slate-100"></tbody></table></div>
+                <div class="mt-8 card p-0 overflow-hidden">
+                    <div class="p-4 border-b bg-slate-50 flex flex-wrap justify-between items-center gap-3"><h3 class="font-bold text-slate-700">รายการที่รอบันทึก</h3><button onclick="savePayrollBatchToDB()" class="bg-slate-800 text-white px-4 py-2 rounded-lg font-bold shadow text-sm hover:bg-slate-700 transition"><i class="fa-solid fa-cloud-arrow-up mr-2"></i> บันทึกเข้าระบบทั้งหมด</button></div>
+                    <div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead class="bg-white border-b text-slate-500 font-semibold"><tr><th class="p-4">พนักงาน</th><th class="p-4 text-right">เงินเดือน</th><th class="p-4 text-right">เพิ่ม</th><th class="p-4 text-right">หัก</th><th class="p-4 text-right text-slate-800">สุทธิ</th><th class="p-4 text-center">จัดการ</th></tr></thead><tbody id="table-payroll-recorded" class="divide-y divide-slate-100"></tbody></table></div>
                 </div>
             </div>
 
@@ -396,25 +392,25 @@
 
                                 <div><label class="text-xs font-bold text-slate-500 mb-1 block">วันที่จ่ายเงิน</label><input type="date" id="c-pay-date" class="form-control"></div>
                                 <div class="flex gap-2 pt-2">
-                                    <button onclick="resetContractorForm()" class="flex-1 bg-slate-100 text-slate-600 py-3 rounded-xl font-bold hover:bg-slate-200 transition">ล้างค่า</button>
-                                    <button onclick="saveContractorJob()" class="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold shadow hover:bg-slate-700 transition">บันทึก</button>
+                                    <button onclick="resetContractorForm()" class="flex-1 bg-slate-100 text-slate-600 py-3 rounded-xl font-bold">ล้างค่า</button>
+                                    <button onclick="saveContractorJob()" class="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold shadow hover:bg-slate-700">บันทึก</button>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <!-- List -->
                     <div class="xl:col-span-8">
-                        <div class="card p-0 overflow-hidden border border-slate-200">
+                        <div class="card p-0 overflow-hidden">
                             <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
                                 <h3 class="font-bold text-slate-700">รายการงานเดือนนี้</h3>
                                 <div class="flex items-center gap-2">
-                                    <button onclick="changeContractorMonth(-1)" class="w-8 h-8 rounded-full hover:bg-slate-200 flex items-center justify-center text-slate-600 transition"><i class="fa-solid fa-chevron-left"></i></button>
-                                    <span class="text-sm font-bold text-slate-600 w-32 text-center" id="c-list-month"></span>
-                                    <button onclick="changeContractorMonth(1)" class="w-8 h-8 rounded-full hover:bg-slate-200 flex items-center justify-center text-slate-600 transition"><i class="fa-solid fa-chevron-right"></i></button>
+                                    <button onclick="changeContractorMonth(-1)" class="w-8 h-8 rounded-full hover:bg-slate-200 flex items-center justify-center text-slate-600"><i class="fa-solid fa-chevron-left"></i></button>
+                                    <span class="text-sm font-bold text-slate-600" id="c-list-month"></span>
+                                    <button onclick="changeContractorMonth(1)" class="w-8 h-8 rounded-full hover:bg-slate-200 flex items-center justify-center text-slate-600"><i class="fa-solid fa-chevron-right"></i></button>
                                 </div>
                             </div>
-                            <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
-                                <table class="w-full text-sm text-left"><thead class="bg-white border-b text-slate-500 font-semibold sticky top-0"><tr><th class="p-4">วันที่</th><th class="p-4">ผู้รับเหมา/งาน</th><th class="p-4 text-right">ค่าจ้าง</th><th class="p-4 text-right">ภาษี</th><th class="p-4 text-right">สุทธิ</th><th class="p-4 text-center">จัดการ</th></tr></thead><tbody id="c-list" class="divide-y divide-slate-100"></tbody></table>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-left"><thead class="bg-white border-b text-slate-500 font-semibold"><tr><th class="p-4">วันที่</th><th class="p-4">ผู้รับเหมา/งาน</th><th class="p-4 text-right">ค่าจ้าง</th><th class="p-4 text-right">ภาษี</th><th class="p-4 text-right">สุทธิ</th><th class="p-4 text-center">จัดการ</th></tr></thead><tbody id="c-list" class="divide-y divide-slate-100"></tbody></table>
                             </div>
                         </div>
                     </div>
@@ -432,35 +428,35 @@
                 </div>
                 <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
                     <div class="xl:col-span-4 space-y-4">
-                        <div class="card border-t-4 border-blue-500 shadow-lg">
-                             <h3 class="font-bold text-slate-800 mb-4 flex items-center"><i class="fa-solid fa-pen-nib mr-2 text-blue-500"></i> ลงบัญชี</h3>
+                        <div class="card border-t-4 border-blue-500">
+                             <h3 class="font-bold text-slate-800 mb-4">ลงบัญชี</h3>
                              <input type="hidden" id="l-id">
                              <div class="space-y-4">
                                  <div><label class="text-xs font-bold text-slate-500 mb-1 block">วันที่</label><input type="date" id="l-date" class="form-control"></div>
                                  <div><label class="text-xs font-bold text-slate-500 mb-1 block">รายการ</label><input type="text" id="l-desc" class="form-control" placeholder="เช่น รับเงินค่างาน..."></div>
                                  <div><label class="text-xs font-bold text-slate-500 mb-1 block">หมวดหมู่</label><select id="l-cat" class="form-control cursor-pointer"></select></div>
                                  <div class="grid grid-cols-2 gap-4">
-                                     <div><label class="text-xs font-bold text-green-600 mb-1 block">รายรับ</label><input type="number" id="l-income" class="form-control text-green-600 font-bold bg-green-50/50 border-green-200" placeholder="0"></div>
-                                     <div><label class="text-xs font-bold text-red-500 mb-1 block">รายจ่าย</label><input type="number" id="l-expense" class="form-control text-red-500 font-bold bg-red-50/50 border-red-200" placeholder="0"></div>
+                                     <div><label class="text-xs font-bold text-green-600 mb-1 block">รายรับ</label><input type="number" id="l-income" class="form-control text-green-600 font-bold" placeholder="0"></div>
+                                     <div><label class="text-xs font-bold text-red-500 mb-1 block">รายจ่าย</label><input type="number" id="l-expense" class="form-control text-red-500 font-bold" placeholder="0"></div>
                                  </div>
                                  <div class="flex gap-2 pt-2">
-                                     <button onclick="resetLedgerForm()" class="flex-1 bg-slate-100 text-slate-600 py-3 rounded-xl font-bold hover:bg-slate-200 transition">รีเซ็ต</button>
-                                     <button onclick="saveLedger()" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold shadow hover:bg-blue-700 transition">บันทึก</button>
+                                     <button onclick="resetLedgerForm()" class="flex-1 bg-slate-100 text-slate-600 py-3 rounded-xl font-bold">รีเซ็ต</button>
+                                     <button onclick="saveLedger()" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold shadow hover:bg-blue-700">บันทึก</button>
                                  </div>
                              </div>
                         </div>
                     </div>
                     <div class="xl:col-span-8">
-                        <div class="card p-0 overflow-hidden border border-slate-200">
+                        <div class="card p-0 overflow-hidden">
                             <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
                                 <h3 class="font-bold text-slate-700">รายการล่าสุด</h3>
                                 <div class="flex items-center gap-2">
-                                    <button onclick="changeLedgerMonth(-1)" class="w-8 h-8 rounded-full hover:bg-slate-200 flex items-center justify-center text-slate-600 transition"><i class="fa-solid fa-chevron-left"></i></button>
-                                    <div class="flex gap-2"><div class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded font-bold">รับ: <span id="ldg-sum-inc">0</span></div><div class="text-xs px-2 py-1 bg-red-100 text-red-700 rounded font-bold">จ่าย: <span id="ldg-sum-exp">0</span></div></div>
-                                    <button onclick="changeLedgerMonth(1)" class="w-8 h-8 rounded-full hover:bg-slate-200 flex items-center justify-center text-slate-600 transition"><i class="fa-solid fa-chevron-right"></i></button>
+                                    <button onclick="changeLedgerMonth(-1)" class="w-8 h-8 rounded-full hover:bg-slate-200 flex items-center justify-center text-slate-600"><i class="fa-solid fa-chevron-left"></i></button>
+                                    <div class="flex gap-2"><div class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">รับ: <span id="ldg-sum-inc">0</span></div><div class="text-xs px-2 py-1 bg-red-100 text-red-700 rounded">จ่าย: <span id="ldg-sum-exp">0</span></div></div>
+                                    <button onclick="changeLedgerMonth(1)" class="w-8 h-8 rounded-full hover:bg-slate-200 flex items-center justify-center text-slate-600"><i class="fa-solid fa-chevron-right"></i></button>
                                 </div>
                             </div>
-                            <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                            <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
                                 <table class="w-full text-sm text-left"><thead class="bg-white border-b text-slate-500 font-semibold sticky top-0"><tr><th class="p-4">วันที่</th><th class="p-4">รายการ</th><th class="p-4">หมวดหมู่</th><th class="p-4 text-right text-green-600">รายรับ</th><th class="p-4 text-right text-red-500">รายจ่าย</th><th class="p-4 text-center">จัดการ</th></tr></thead><tbody id="l-list" class="divide-y divide-slate-100"></tbody></table>
                             </div>
                         </div>
@@ -482,7 +478,7 @@
 
                 <!-- 1. Payroll Report -->
                 <div id="rpt-tab-payroll" class="rpt-tab-content">
-                    <div class="card mb-6 p-4 border border-slate-200">
+                    <div class="card mb-6 p-4">
                         <div class="flex flex-wrap gap-4 items-end">
                             <div class="flex-1 min-w-[120px]"><label class="text-xs font-bold text-slate-500 mb-1 block">รูปแบบ</label><select id="rpt-period" class="form-control"><option value="all">รวมทั้งเดือน</option><option value="1">แยกรายงวด 1</option><option value="2">แยกรายงวด 2</option></select></div>
                             <div class="flex-1 min-w-[140px]"><label class="text-xs font-bold text-slate-500 mb-1 block">เดือน</label><select id="rpt-month" class="form-control"></select></div>
@@ -490,98 +486,98 @@
                             <button onclick="filterReport()" class="bg-blue-600 text-white px-6 h-12 rounded-xl font-bold shadow hover:bg-blue-700 transition w-full md:w-auto"><i class="fa-solid fa-search mr-2"></i> ค้นหา</button>
                         </div>
                         <div class="mt-4 pt-4 border-t border-slate-100 flex flex-wrap gap-3" id="export-buttons-area" style="display: none;">
-                            <button onclick="exportToExcel()" class="bg-[#22c55e] hover:bg-[#16a34a] text-white px-5 py-2 rounded-xl font-bold shadow-sm transition flex items-center text-sm"><i class="fa-solid fa-file-excel mr-2"></i> Excel</button>
-                            <button onclick="exportToPDF()" class="bg-[#ef4444] hover:bg-[#dc2626] text-white px-5 py-2 rounded-xl font-bold shadow-sm transition flex items-center text-sm"><i class="fa-solid fa-file-pdf mr-2"></i> Report PDF</button>
-                            <button onclick="printAllSlips()" class="bg-[#f97316] hover:bg-[#ea580c] text-white px-5 py-2 rounded-xl font-bold shadow-sm transition flex items-center text-sm"><i class="fa-solid fa-print mr-2"></i> Slips PDF</button>
+                            <button onclick="exportToExcel()" class="bg-[#4ade80] hover:bg-[#22c55e] text-white px-5 py-2 rounded-xl font-bold shadow-sm transition flex items-center text-sm"><i class="fa-solid fa-file-excel mr-2"></i> Excel</button>
+                            <button onclick="exportToPDF()" class="bg-[#f87171] hover:bg-[#ef4444] text-white px-5 py-2 rounded-xl font-bold shadow-sm transition flex items-center text-sm"><i class="fa-solid fa-file-pdf mr-2"></i> Report PDF</button>
+                            <button onclick="printAllSlips()" class="bg-[#fb923c] hover:bg-[#f97316] text-white px-5 py-2 rounded-xl font-bold shadow-sm transition flex items-center text-sm"><i class="fa-solid fa-print mr-2"></i> Slips PDF</button>
                         </div>
                     </div>
-                    <div class="overflow-x-auto card p-0 border border-slate-200" id="report-table-container">
-                        <table class="print-table w-full text-left">
+                    <div class="overflow-x-auto" id="report-table-container">
+                        <table class="report-print-table">
                             <thead>
                                 <tr>
-                                    <th rowspan="2" class="p-2 border bg-slate-100">งวด</th>
-                                    <th rowspan="2" class="p-2 border bg-slate-100">เดือน</th>
-                                    <th rowspan="2" class="p-2 border bg-slate-100">ปี</th>
-                                    <th colspan="3" class="p-2 border bg-slate-200 text-center">ข้อมูลพนักงาน</th>
-                                    <th colspan="4" class="p-2 border text-center" style="background-color: #dcfce7; color: #166534;">รายรับ</th>
-                                    <th colspan="7" class="p-2 border text-center" style="background-color: #fee2e2; color: #991b1b;">รายหัก</th>
-                                    <th rowspan="2" class="p-2 border bg-slate-800 text-white text-center w-24">สุทธิ</th>
+                                    <th rowspan="2">งวด</th>
+                                    <th rowspan="2">เดือน</th>
+                                    <th rowspan="2">ปี</th>
+                                    <th colspan="3">ข้อมูลพนักงาน</th>
+                                    <th colspan="4" style="background-color: #f0fdf4;">รายรับ</th>
+                                    <th colspan="7" style="background-color: #fef2f2;">รายหัก</th>
+                                    <th rowspan="2">สุทธิ</th>
                                 </tr>
                                 <tr>
-                                    <th class="p-2 border bg-slate-50 text-xs">รหัส</th>
-                                    <th class="p-2 border bg-slate-50 text-xs">ชื่อ-สกุล</th>
-                                    <th class="p-2 border bg-slate-50 text-xs">ตำแหน่ง</th>
-                                    <th class="p-2 border text-xs" style="background-color: #f0fdf4;">เงินเดือน</th>
-                                    <th class="p-2 border text-xs" style="background-color: #f0fdf4;">ค่าตอบแทน</th>
-                                    <th class="p-2 border text-xs" style="background-color: #f0fdf4;">อื่นๆ</th>
-                                    <th class="p-2 border text-xs text-green-700" style="background-color: #bbf7d0; font-weight: bold;">รวมรับ</th>
-                                    <th class="p-2 border text-xs" style="background-color: #fef2f2;">สปส.</th>
-                                    <th class="p-2 border text-xs" style="background-color: #fef2f2;">ภาษี</th>
-                                    <th class="p-2 border text-xs" style="background-color: #fef2f2;">เบิก</th>
-                                    <th class="p-2 border text-xs" style="background-color: #fef2f2;">น้ำ</th>
-                                    <th class="p-2 border text-xs" style="background-color: #fef2f2;">ไฟ</th>
-                                    <th class="p-2 border text-xs font-bold text-blue-700" style="background-color: #eff6ff;">กยศ.</th>
-                                    <th class="p-2 border text-xs text-red-700" style="background-color: #fecaca; font-weight: bold;">รวมหัก</th>
+                                    <th>รหัส</th>
+                                    <th>ชื่อ-สกุล</th>
+                                    <th>ตำแหน่ง</th>
+                                    <th style="background-color: #f0fdf4;">เงินเดือน</th>
+                                    <th style="background-color: #f0fdf4;">ค่าตอบแทน</th>
+                                    <th style="background-color: #f0fdf4;">อื่นๆ</th>
+                                    <th style="background-color: #dcfce7; font-weight: bold;">รวมรับ</th>
+                                    <th style="background-color: #fef2f2;">สปส.</th>
+                                    <th style="background-color: #fef2f2;">ภาษี</th>
+                                    <th style="background-color: #fef2f2;">เบิก</th>
+                                    <th style="background-color: #fef2f2;">กยศ.</th>
+                                    <th style="background-color: #fef2f2;">น้ำ</th>
+                                    <th style="background-color: #fef2f2;">ไฟ</th>
+                                    <th style="background-color: #fee2e2; font-weight: bold;">รวมหัก</th>
                                 </tr>
                             </thead>
-                            <tbody id="rpt-list" class="text-sm divide-y divide-slate-100"></tbody>
+                            <tbody id="rpt-list"></tbody>
                         </table>
                     </div>
                 </div>
 
                 <!-- 2. Contractor Report -->
                 <div id="rpt-tab-contractor" class="rpt-tab-content hidden">
-                    <div class="card mb-6 p-4 border border-slate-200">
+                    <div class="card mb-6 p-4">
                         <div class="flex gap-4 items-end">
                             <div class="flex-1"><label class="text-xs font-bold text-slate-500 mb-1 block">เดือน</label><select id="rpt-c-month" class="form-control"></select></div>
                             <div class="w-32"><label class="text-xs font-bold text-slate-500 mb-1 block">ปี</label><select id="rpt-c-year" class="form-control"></select></div>
                             <button onclick="filterContractorReport()" class="bg-orange-600 text-white px-6 h-12 rounded-xl font-bold shadow hover:bg-orange-700 transition"><i class="fa-solid fa-search mr-2"></i> ค้นหา</button>
                         </div>
                     </div>
-                    <div class="card p-0 overflow-hidden border border-slate-200"><table class="w-full text-sm text-left"><thead class="bg-slate-50 border-b text-slate-500 font-semibold"><tr><th class="p-4">วันที่</th><th class="p-4">ผู้รับเหมา/งาน</th><th class="p-4 text-right">ค่าจ้าง</th><th class="p-4 text-right">ภาษี</th><th class="p-4 text-right">สุทธิ</th><th class="p-4 text-center">พิมพ์</th></tr></thead><tbody id="rpt-c-list" class="divide-y divide-slate-100"></tbody></table></div>
+                    <div class="card p-0 overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-slate-50 border-b text-slate-500 font-semibold"><tr><th class="p-4">วันที่</th><th class="p-4">ผู้รับเหมา/งาน</th><th class="p-4 text-right">ค่าจ้าง</th><th class="p-4 text-right">ภาษี</th><th class="p-4 text-right">สุทธิ</th><th class="p-4 text-center">พิมพ์</th></tr></thead><tbody id="rpt-c-list" class="divide-y divide-slate-100"></tbody></table></div>
                 </div>
 
                 <!-- 3. Ledger Report -->
                 <div id="rpt-tab-ledger" class="rpt-tab-content hidden">
-                    <div class="card mb-6 p-4 border border-slate-200">
+                    <div class="card mb-6 p-4">
                         <div class="flex gap-4 items-end">
                             <div class="flex-1"><label class="text-xs font-bold text-slate-500 mb-1 block">เดือน (เลือก 'ทั้งปี' ได้)</label><select id="rpt-l-month" class="form-control"><option value="all">-- ทั้งปี --</option></select></div>
                             <div class="w-32"><label class="text-xs font-bold text-slate-500 mb-1 block">ปี</label><select id="rpt-l-year" class="form-control"></select></div>
                             <button onclick="filterLedgerReport()" class="bg-blue-600 text-white px-6 h-12 rounded-xl font-bold shadow hover:bg-blue-700 transition"><i class="fa-solid fa-search mr-2"></i> ค้นหา</button>
                         </div>
                          <div class="mt-4 pt-4 border-t border-slate-100">
-                             <button onclick="printLedgerReport()" id="btn-print-ledger" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hidden hover:bg-slate-700 transition"><i class="fa-solid fa-print mr-2"></i> พิมพ์สรุปบัญชี</button>
+                             <button onclick="printLedgerReport()" id="btn-print-ledger" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hidden"><i class="fa-solid fa-print mr-2"></i> พิมพ์สรุปบัญชี</button>
                         </div>
                     </div>
                     <div class="grid grid-cols-3 gap-4 mb-6 hidden" id="rpt-l-summary">
-                        <div class="bg-green-100 text-green-800 p-4 rounded-xl text-center shadow-sm"><p class="text-xs mb-1 font-bold">รายรับรวม</p><h3 class="text-xl font-bold" id="rs-inc">0</h3></div>
-                        <div class="bg-red-100 text-red-800 p-4 rounded-xl text-center shadow-sm"><p class="text-xs mb-1 font-bold">รายจ่ายรวม</p><h3 class="text-xl font-bold" id="rs-exp">0</h3></div>
-                        <div class="bg-white border border-slate-200 text-blue-800 p-4 rounded-xl text-center shadow-sm"><p class="text-xs mb-1 font-bold">ยอดคงเหลือ (Balance)</p><h3 class="text-xl font-bold" id="rs-net">0</h3></div>
+                        <div class="bg-green-100 text-green-800 p-4 rounded-xl text-center"><p class="text-xs mb-1">รายรับรวม</p><h3 class="text-xl font-bold" id="rs-inc">0</h3></div>
+                        <div class="bg-red-100 text-red-800 p-4 rounded-xl text-center"><p class="text-xs mb-1">รายจ่ายรวม</p><h3 class="text-xl font-bold" id="rs-exp">0</h3></div>
+                        <div class="bg-white border text-slate-800 p-4 rounded-xl text-center"><p class="text-xs mb-1">ยอดคงเหลือ (Balance)</p><h3 class="text-xl font-bold" id="rs-net">0</h3></div>
                     </div>
-                    <div class="card p-0 overflow-hidden border border-slate-200"><table class="w-full text-sm text-left"><thead class="bg-slate-50 border-b text-slate-500 font-semibold"><tr><th class="p-4">วันที่</th><th class="p-4">รายการ</th><th class="p-4">หมวดหมู่</th><th class="p-4 text-right">รับ</th><th class="p-4 text-right">จ่าย</th></tr></thead><tbody id="rpt-l-list" class="divide-y divide-slate-100"></tbody></table></div>
+                    <div class="card p-0 overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-slate-50 border-b text-slate-500 font-semibold"><tr><th class="p-4">วันที่</th><th class="p-4">รายการ</th><th class="p-4">หมวดหมู่</th><th class="p-4 text-right">รับ</th><th class="p-4 text-right">จ่าย</th></tr></thead><tbody id="rpt-l-list" class="divide-y divide-slate-100"></tbody></table></div>
                 </div>
 
                 <!-- 4. Trip Report -->
                 <div id="rpt-tab-trip" class="rpt-tab-content hidden">
-                     <div class="card mb-6 p-4 border border-slate-200">
+                     <div class="card mb-6 p-4">
                         <div class="flex flex-wrap gap-4 items-end">
                             <div class="w-32"><label class="text-xs font-bold text-slate-500 mb-1 block">เดือน</label><select id="rpt-t-month" class="form-control"></select></div>
                             <div class="w-24"><label class="text-xs font-bold text-slate-500 mb-1 block">ปี</label><select id="rpt-t-year" class="form-control"></select></div>
                             <div class="w-40"><label class="text-xs font-bold text-slate-500 mb-1 block">งวด</label><select id="rpt-t-period" class="form-control"><option value="1">1 (วันที่ 1-15)</option><option value="2">2 (วันที่ 16-สิ้นเดือน)</option></select></div>
                             <div class="flex-1"><label class="text-xs font-bold text-slate-500 mb-1 block">ประเภท</label>
                                 <div class="flex gap-2 p-1 bg-slate-100 rounded-lg">
-                                    <label class="flex-1 text-center cursor-pointer"><input type="radio" name="rpt-t-type" value="All" checked class="peer hidden"><div class="py-2.5 rounded-md text-sm font-medium text-slate-500 peer-checked:bg-white peer-checked:text-purple-600 peer-checked:shadow-sm transition">ทั้งหมด</div></label>
-                                    <label class="flex-1 text-center cursor-pointer"><input type="radio" name="rpt-t-type" value="Macro" class="peer hidden"><div class="py-2.5 rounded-md text-sm font-medium text-slate-500 peer-checked:bg-white peer-checked:text-purple-600 peer-checked:shadow-sm transition">แม็คโคร</div></label>
-                                    <label class="flex-1 text-center cursor-pointer"><input type="radio" name="rpt-t-type" value="Truck" class="peer hidden"><div class="py-2.5 rounded-md text-sm font-medium text-slate-500 peer-checked:bg-white peer-checked:text-purple-600 peer-checked:shadow-sm transition">สิบล้อ</div></label>
+                                    <label class="flex-1 text-center cursor-pointer"><input type="radio" name="rpt-t-type" value="All" checked class="peer hidden"><div class="py-2 rounded-md text-sm font-medium text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition">ทั้งหมด</div></label>
+                                    <label class="flex-1 text-center cursor-pointer"><input type="radio" name="rpt-t-type" value="Macro" class="peer hidden"><div class="py-2 rounded-md text-sm font-medium text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition">แม็คโคร</div></label>
+                                    <label class="flex-1 text-center cursor-pointer"><input type="radio" name="rpt-t-type" value="Truck" class="peer hidden"><div class="py-2 rounded-md text-sm font-medium text-slate-500 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition">สิบล้อ</div></label>
                                 </div>
                             </div>
                             <button onclick="filterTripReport()" class="bg-purple-600 text-white px-6 h-12 rounded-xl font-bold shadow hover:bg-purple-700 transition"><i class="fa-solid fa-search mr-2"></i> ค้นหา</button>
                         </div>
                         <div class="mt-4 pt-4 border-t border-slate-100 hidden" id="trip-export-area">
-                             <button onclick="printTripReport()" class="bg-slate-800 text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow hover:bg-slate-700 transition"><i class="fa-solid fa-print mr-2"></i> พิมพ์ใบสรุปเที่ยว (PDF)</button>
+                             <button onclick="printTripReport()" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold shadow"><i class="fa-solid fa-print mr-2"></i> พิมพ์ใบสรุปเที่ยว (PDF)</button>
                         </div>
                     </div>
-                    <div class="card p-0 overflow-x-auto border border-slate-200">
+                    <div class="card p-0 overflow-x-auto">
                         <div id="trip-report-container" class="min-w-full"></div>
                     </div>
                 </div>
@@ -592,7 +588,7 @@
             <div id="settings" class="page">
                 <h2 class="text-2xl font-bold mb-6 text-slate-800">ตั้งค่าระบบ</h2>
                 <form id="settingsForm" onsubmit="saveSettings(event)" class="max-w-3xl space-y-6">
-                    <div class="card shadow-sm border border-slate-200">
+                    <div class="card">
                         <h3 class="font-bold border-b pb-3 mb-4 text-blue-600"><i class="fa-solid fa-building mr-2"></i> ข้อมูลองค์กร</h3>
                         <div class="space-y-4">
                             <div><label class="block text-sm font-bold mb-1 text-slate-700">ชื่อบริษัท</label><input name="company_name" id="set-company" class="form-control"></div>
@@ -600,24 +596,14 @@
                             <div><label class="block text-sm font-bold mb-1 text-slate-700">ที่อยู่</label><textarea name="company_address" id="set-address" class="form-control" rows="3"></textarea></div>
                         </div>
                     </div>
-                    <div class="card shadow-sm border border-slate-200">
+                    <div class="card">
                          <h3 class="font-bold border-b pb-3 mb-4 text-purple-600"><i class="fa-solid fa-list mr-2"></i> หมวดหมู่บัญชี</h3>
                          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                              <div><label class="block text-sm font-bold mb-1 text-slate-700">หมวดรายรับ (คั่นด้วยจุลภาค ,)</label><textarea name="acc_income_cats" id="set-inc-cat" class="form-control" rows="3"></textarea></div>
                              <div><label class="block text-sm font-bold mb-1 text-slate-700">หมวดรายจ่าย (คั่นด้วยจุลภาค ,)</label><textarea name="acc_expense_cats" id="set-exp-cat" class="form-control" rows="3"></textarea></div>
                          </div>
                     </div>
-                    <div class="card shadow-sm border border-slate-200">
-                        <h3 class="font-bold border-b pb-3 mb-4 text-green-600"><i class="fa-solid fa-calculator mr-2"></i> การคำนวณเงินเดือน</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div><label class="block text-sm font-bold mb-1 text-slate-700">ประกันสังคม (%)</label><input name="sso_rate" id="set-sso" type="number" step="0.01" class="form-control" placeholder="เช่น 5"></div>
-                            <div><label class="block text-sm font-bold mb-1 text-slate-700">เพดานหักประกันสังคม (บาท)</label><input name="sso_max" id="set-sso-max" type="number" class="form-control" placeholder="เช่น 750"></div>
-                            <div class="col-span-1 md:col-span-2 text-xs text-slate-500 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                                <i class="fa-solid fa-circle-info text-blue-500 mr-1"></i> ระบบจะคำนวณหักประกันสังคมเฉพาะ <b>งวดที่ 1</b> ของเดือนเท่านั้น 
-                                <br><i class="fa-solid fa-circle-info text-transparent mr-1"></i> *เมนู <b>รายได้อื่นๆ</b> และ <b>เกณฑ์เที่ยวเหมาจ่าย</b> ได้ถูกย้ายไปที่หน้าบันทึกรายวันแล้ว
-                            </div>
-                        </div>
-                    </div>
+                    <div class="card"><h3 class="font-bold border-b pb-3 mb-4 text-green-600"><i class="fa-solid fa-calculator mr-2"></i> การคำนวณเงินเดือน</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div><label class="block text-sm font-bold mb-1 text-slate-700">ประกันสังคม (%)</label><input name="sso_rate" id="set-sso" type="number" step="0.01" class="form-control"></div><div><label class="block text-sm font-bold mb-1 text-slate-700">เพดานประกันสังคม</label><input name="sso_max" id="set-sso-max" type="number" class="form-control"></div></div></div>
                     <button type="submit" class="bg-slate-800 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-slate-700 transition w-full md:w-auto">บันทึกการตั้งค่า</button>
                 </form>
             </div>
@@ -664,7 +650,7 @@
         <div class="bg-white w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl relative"><div class="bg-slate-800 p-4 flex justify-between items-center text-white"><h3 class="font-bold text-lg"><i class="fa-solid fa-file-invoice mr-2"></i> เอกสาร</h3><button onclick="document.getElementById('payslipModal').classList.add('hidden')" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition"><i class="fa-solid fa-times"></i></button></div><div class="p-0 bg-slate-100 overflow-y-auto max-h-[80dvh]" id="payslip-modal-body"><div id="payslip-content" class="w-full"></div></div><div class="p-4 bg-slate-50 flex justify-end border-t"><button onclick="printSingleSlip()" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold shadow hover:bg-blue-700 transition flex items-center"><i class="fa-solid fa-print mr-2"></i> พิมพ์ / ดาวน์โหลด</button></div></div>
     </div>
 
-    <!-- Hidden containers -->
+    <!-- Hidden containers for old code compatibility (some might still be referenced by old logic logic, keeping them empty) -->
     <div id="print-all-container" style="display: none;"></div>
     <div id="pdf-report-container" style="display: none;"></div>
     <div id="trip-print-container" style="display: none;"></div>
@@ -680,6 +666,7 @@
             const monthNames = ["", "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
             const monthLabel = `${monthNames[m]} ${y}`;
 
+            // Re-calculate the data specifically for the PDF generator (mirroring the logic in filterTripReport)
             let startDate = 1, endDate = 15;
             let lastDayOfMonth = new Date(y, m, 0).getDate();
             if (p === 2) { startDate = 16; endDate = lastDayOfMonth; }
@@ -693,14 +680,17 @@
                 emps = emps.filter(e => e.pos && (e.pos.includes('สิบล้อ') || e.pos.includes('Truck')));
             }
 
+            // Prepare Table Body for PDF
             let pdfData = [];
             emps.forEach(emp => {
                 let row = [`${emp.prefix}${emp.fname} ${emp.lname}`];
                 let empTotal = 0;
+                
                 let dayColIndex = 0;
                 for(let d = startDate; d <= endDate; d++) {
                     const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                     const rec = appState.dailyRecords.find(r => r.emp_id == emp.id && r.date === dateStr);
+                    
                     if(rec && rec.trip_count > 0) {
                         row.push(rec.trip_count.toString());
                         empTotal += rec.trip_count;
@@ -709,15 +699,18 @@
                     }
                     dayColIndex++;
                 }
+
                 row.push(empTotal.toString());
                 pdfData.push(row);
             });
 
+            // Call Service (เพิ่มพารามิเตอร์ p เข้าไป)
             PDFService.generateTripReport(pdfData, type.toUpperCase(), monthLabel, p);
         };
 
         window.printAllSlips = () => {
              if(filteredReportData.length === 0) return Swal.fire('ไม่มีข้อมูล', 'กรุณากดค้นหาก่อน', 'warning');
+             // Convert raw data to PDF Service format
              const dataForPdf = filteredReportData.map(d => ({
                  name: d.name,
                  pos: d.pos,
@@ -730,9 +723,9 @@
                  sso: d.sso,
                  tax: d.tax,
                  advance: d.advance,
+                 student_loan: d.student_loan || 0, // เพิ่ม กยศ
                  water: d.water,
                  electricity: d.electricity,
-                 student_loan: d.student_loan || 0, // เพิ่ม กยศ.
                  net: d.net,
                  totalDeduction: d.sso + d.tax + d.advance + d.water + d.electricity + (d.student_loan || 0),
                  bank: d.bank
@@ -741,12 +734,15 @@
         };
 
         window.printSingleSlip = () => {
+             // Retrieve data from current view or modal context. 
              if(window.currentSlipData) {
+                 // Wrap in array because generatePayslip expects an array
                  const data = { ...window.currentSlipData };
                  data.period = data.period + ""; 
                  data.totalDeduction = data.sso + data.tax + data.advance + data.water + data.electricity + (data.student_loan || 0);
                  PDFService.generatePayslip([data]);
              } else {
+                 // Fallback if not available
                  alert("Error: Data not found for PDF generation.");
              }
         };
@@ -755,17 +751,19 @@
              const p = appState.projects.find(x => x.id == projId); 
              if (!p) return;
              
+             // ดึงข้อมูลพนักงาน (ถ้าไม่มี ให้มีค่าว่าง)
              const emp = appState.employees.find(e => e.id == p.emp_id) || { fname: '', lname: '', id: '', address: '', prefix: '' };
              
+             // ส่งข้อมูลให้ PDFService.js ทั้ง 6 อย่าง ตามโครงสร้างใหม่
              const receiptData = {
                  id: p.id,
                  date: p.date,
-                 empName: `${emp.prefix || ''}${emp.fname || ''} ${emp.lname || ''}`.trim(),
-                 empAddress: emp.address || "",
-                 empCardId: emp.id || "",
-                 companyName: appState.settings.company_name || "",
-                 companyAddress: appState.settings.company_address || "",
-                 companyTaxId: appState.settings.tax_id || "",
+                 empName: `${emp.prefix || ''}${emp.fname || ''} ${emp.lname || ''}`.trim(), // 1. ชื่อ
+                 empAddress: emp.address || "", // 2. ที่อยู่พนักงาน
+                 empCardId: emp.id || "", // 3. เลขบัตรประชาชน
+                 companyName: appState.settings.company_name || "", // 4. ชื่อบริษัท
+                 companyAddress: appState.settings.company_address || "", // 5. ที่อยู่บริษัท
+                 companyTaxId: appState.settings.tax_id || "", // 6. เลขผู้เสียภาษีบริษัท
                  job_name: p.job_name,
                  amount: p.amount,
                  wht_rate: p.wht_rate,
@@ -782,24 +780,24 @@
         };
 
         window.exportToPDF = () => {
+             // แก้ให้ส่งข้อมูล 16 คอลัมน์ ครบถ้วนตามตารางละเอียดที่กำหนดไว้
              const data = filteredReportData.map(d => [
-                 d.period, 
-                 d.month, 
-                 d.year, 
-                 d.emp_id, 
-                 d.name, 
-                 d.pos, 
-                 d.salary, 
-                 d.incentive, 
-                 d.other, 
-                 (d.salary + d.incentive + d.other), 
-                 d.sso, 
-                 d.advance, 
-                 d.water, 
-                 d.electricity, 
-                 d.student_loan || 0, // แทรก กยศ. ใน PDF Array หาก PDFService รองรับ
-                 (d.sso + d.tax + d.advance + d.water + d.electricity + (d.student_loan || 0)), 
-                 d.net 
+                 d.period, // 1. งวด
+                 d.month, // 2. เดือน
+                 d.year, // 3. ปี
+                 d.emp_id, // 4. เลขบัตร/รหัส
+                 d.name, // 5. ชื่อ-สกุล
+                 d.pos, // 6. ตำแหน่ง
+                 d.salary, // 7. เงินเดือน
+                 d.incentive, // 8. ค่าตอบแทน
+                 d.other, // 9. อื่นๆ
+                 (d.salary + d.incentive + d.other), // 10. รวมรับ
+                 d.sso, // 11. สปส
+                 d.advance, // 12. เบิก
+                 d.water, // 13. น้ำ
+                 d.electricity, // 14. ไฟ
+                 (d.sso + d.tax + d.advance + d.water + d.electricity + (d.student_loan||0)), // 15. รวมหัก
+                 d.net // 16. สุทธิ
              ]);
              PDFService.generateSalarySummary(data);
         };
@@ -807,8 +805,8 @@
         // ============================================================
         // 1. CONFIGURATION & SUPABASE SETUP
         // ============================================================
-        const SUPABASE_URL = 'https://qtbdosctphibsyimkyvt.supabase.co'; 
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0YmRvc2N0cGhpYnN5aW1reXZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMzUyMDksImV4cCI6MjA4NjcxMTIwOX0.56bsWDqxR24s9kBSbVRT5ucdEjiS6eDd7ARXsqz2tUo'; 
+        const SUPABASE_URL = 'https://qtbdosctphibsyimkyvt.supabase.co'; // ใส่ URL ของคุณ
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0YmRvc2N0cGhpYnN5aW1reXZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMzUyMDksImV4cCI6MjA4NjcxMTIwOX0.56bsWDqxR24s9kBSbVRT5ucdEjiS6eDd7ARXsqz2tUo'; // ใส่ Key ของคุณ
         
         let db;
         try {
@@ -819,7 +817,7 @@
             }
         } catch(e) { console.error("Supabase Init Error", e); }
 
-        const TEAM_PIN = "8888"; 
+        const TEAM_PIN = "8888"; // รหัสเข้าใช้งาน
 
         // ============================================================
         // 2. GLOBAL STATE
@@ -832,7 +830,8 @@
         let empChart = null, salaryChart = null;
         window.filteredReportData = []; 
         window.currentEmpFilter = 'All';
-        window.currentSlipData = null; 
+        window.currentSlipData = null; // Store for PDF generation
+        window.selectedDailyEmpId = null;
 
         // ============================================================
         // 3. INITIALIZATION & LOGIN
@@ -866,6 +865,7 @@
             document.getElementById('c-date').valueAsDate = d; 
             document.getElementById('l-date').valueAsDate = d;
             
+            // Set init nav states
             appState.nav.cMonth = d.getMonth() + 1;
             appState.nav.cYear = d.getFullYear();
             appState.nav.lMonth = d.getMonth() + 1;
@@ -910,6 +910,7 @@
             renderPayrollEmpSelect();
             initDateDropdowns(); 
             
+            // Populate Settings
             const s = appState.settings;
             if(s) {
                 document.getElementById('set-company').value = s.company_name || '';
@@ -997,70 +998,83 @@
         // ============================================================
         // 6. DAILY RECORD LOGIC
         // ============================================================
-        window.switchDailyTab = function(tabIndex) {
-            document.getElementById('daily-tab-1').classList.add('hidden');
-            document.getElementById('daily-tab-2').classList.add('hidden');
-            document.getElementById('tab-btn-daily-1').className = "flex-1 py-2.5 rounded-lg text-sm font-bold text-slate-500 hover:text-slate-700 hover:bg-white/50 transition";
-            document.getElementById('tab-btn-daily-2').className = "flex-1 py-2.5 rounded-lg text-sm font-bold text-slate-500 hover:text-slate-700 hover:bg-white/50 transition";
-            
-            document.getElementById(`daily-tab-${tabIndex}`).classList.remove('hidden');
-            document.getElementById(`tab-btn-daily-${tabIndex}`).className = "flex-1 py-2.5 rounded-lg text-sm font-bold bg-white text-blue-600 shadow-sm transition";
-        }
-
-        window.handleDateChange = function() {
-            filterDailyList();
-            updateEmpStatsCard();
-            const currentEmp = document.getElementById('d-emp').value;
-            if(currentEmp) selectDailyEmp();
-        }
-
         window.renderDailyEmpList = function(search = '') { 
-            const c = document.getElementById('d-emp-list'); 
-            const emps = appState.employees.filter(e => e.status !== 'Resigned' && (e.fname.includes(search) || e.lname.includes(search) || e.pos.includes(search)));
-            const selectedId = document.getElementById('d-emp').value;
+            const container = document.getElementById('d-emp-list-container'); 
+            let list = appState.employees.filter(e => e.status !== 'Resigned'); 
+            if(search) list = list.filter(e => (e.fname+e.lname).includes(search)); 
             
-            if(emps.length === 0) {
-                c.innerHTML = '<div class="p-4 text-center text-xs text-slate-400">ไม่พบพนักงาน</div>';
+            if (list.length === 0) {
+                container.innerHTML = `<div class="p-4 text-center text-slate-400 text-xs">ไม่พบรายชื่อพนักงาน</div>`;
                 return;
             }
 
-            c.innerHTML = emps.map(e => `
-                <div onclick="setDailyEmp('${e.id}')" class="p-3 cursor-pointer transition flex justify-between items-center group ${selectedId === e.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : 'hover:bg-slate-50 border-l-4 border-l-transparent'}">
-                    <div>
-                        <div class="font-bold ${selectedId === e.id ? 'text-blue-800' : 'text-slate-700'} text-sm">${e.prefix}${e.fname} ${e.lname}</div>
-                        <div class="text-[11px] ${selectedId === e.id ? 'text-blue-500' : 'text-slate-500'} mt-0.5">${e.pos}</div>
-                    </div>
-                    ${selectedId === e.id ? '<i class="fa-solid fa-chevron-right text-blue-400 text-xs"></i>' : '<i class="fa-solid fa-chevron-right text-slate-200 opacity-0 group-hover:opacity-100 transition text-xs"></i>'}
+            container.innerHTML = list.map(e => `
+                <div onclick="selectDailyEmpFromList('${e.id}')" id="d-emp-row-${e.id}" class="p-3 cursor-pointer hover:bg-blue-50 transition border-l-4 ${window.selectedDailyEmpId === e.id ? 'border-blue-500 bg-blue-50' : 'border-transparent'}">
+                    <div class="font-bold text-sm text-slate-700">${e.prefix}${e.fname} ${e.lname}</div>
+                    <div class="text-xs text-slate-500 mt-1"><span class="px-1.5 py-0.5 bg-slate-200 rounded">${e.pos}</span></div>
                 </div>
             `).join(''); 
         }
 
-        window.setDailyEmp = function(id) {
+        window.selectDailyEmpFromList = function(id) {
+            window.selectedDailyEmpId = id;
             document.getElementById('d-emp').value = id;
-            renderDailyEmpList(document.getElementById('d-emp-search').value);
-            selectDailyEmp();
+            renderDailyEmpList(document.getElementById('d-emp-search').value); 
+            selectDailyEmp(); 
         }
 
-        window.addDynamicIncomeRow = function(name = '', amount = '') {
-            const list = document.getElementById('dynamic-income-list');
-            const emptyState = document.getElementById('dyn-empty-state');
-            if(emptyState) emptyState.classList.add('hidden');
-            
-            const rowId = 'dyn-' + Date.now() + Math.floor(Math.random()*1000);
-            const html = `
-                <div class="flex gap-2 items-center dyn-income-row fade-in" id="${rowId}">
-                    <input type="text" class="form-control flex-1 h-10 text-sm dyn-name" placeholder="ชื่อรายการ (เช่น เบี้ยเลี้ยง)" value="${name}" oninput="calcDaily()">
-                    <input type="number" class="form-control w-28 h-10 text-sm text-right dyn-amt" placeholder="ยอดเงิน" value="${amount}" oninput="calcDaily()">
-                    <button onclick="document.getElementById('${rowId}').remove(); calcDaily(); checkEmptyDyn();" class="w-10 h-10 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 flex items-center justify-center shrink-0 transition"><i class="fa-solid fa-trash text-xs"></i></button>
-                </div>
+        window.handleDailyDateChange = function() {
+            filterDailyList();
+            if(window.selectedDailyEmpId) {
+                selectDailyEmp(); // Refresh form data for new date
+                updateEmpStatsCard();
+            }
+        }
+
+        window.switchDailyTab = function(tabName, btn) {
+            // Update buttons
+            document.querySelectorAll('.daily-tab-btn').forEach(b => {
+                b.classList.remove('bg-white', 'text-blue-600', 'shadow-sm');
+                b.classList.add('text-slate-500');
+            });
+            btn.classList.remove('text-slate-500');
+            btn.classList.add('bg-white', 'text-blue-600', 'shadow-sm');
+
+            // Update content sections
+            document.getElementById('d-sec-shift').classList.add('hidden');
+            document.getElementById('d-sec-ot').classList.add('hidden');
+            document.getElementById('d-sec-' + tabName).classList.remove('hidden');
+        }
+
+        window.addOtherIncomeRow = function(name='', val='') {
+            const container = document.getElementById('d-other-income-container');
+            const row = document.createElement('div');
+            row.className = 'flex gap-2 items-center other-income-row';
+            row.innerHTML = `
+                <input type="text" placeholder="ชื่อรายการ" class="form-control h-10 flex-1 text-sm other-name" value="${name}">
+                <input type="number" placeholder="ยอดเงิน" class="form-control h-10 w-24 text-sm other-val text-right" value="${val}" oninput="calcDaily()">
+                <button type="button" onclick="this.parentElement.remove(); calcDaily();" class="text-red-400 hover:text-red-600 p-2"><i class="fa-solid fa-times"></i></button>
             `;
-            list.insertAdjacentHTML('beforeend', html);
+            container.appendChild(row);
         }
 
-        window.checkEmptyDyn = function() {
-            const list = document.getElementById('dynamic-income-list');
-            const emptyState = document.getElementById('dyn-empty-state');
-            if(list.children.length === 0 && emptyState) emptyState.classList.remove('hidden');
+        window.renderOtherIncomesData = function(obj) {
+            document.getElementById('d-other-income-container').innerHTML = '';
+            if(obj && Object.keys(obj).length > 0) {
+                for(let k in obj) addOtherIncomeRow(k, obj[k]);
+            } else {
+                addOtherIncomeRow(); 
+            }
+        }
+
+        window.getOtherIncomes = function() {
+            let res = {};
+            document.querySelectorAll('.other-income-row').forEach(row => {
+                const name = row.querySelector('.other-name').value.trim();
+                const val = parseFloat(row.querySelector('.other-val').value) || 0;
+                if(name && val) res[name] = val;
+            });
+            return res;
         }
 
         window.calcDaily = function() { 
@@ -1070,26 +1084,21 @@
             document.getElementById('d-ot-total-disp').innerText = ot.toLocaleString(undefined, {minimumFractionDigits: 2}); 
             
             const trips = v('d-trip-count'); 
-            const thresh = v('d-trip-threshold');
-            const rate = v('d-trip-rate');
+            const thresh = v('d-trip-threshold'); 
+            const rate = v('d-trip-rate'); 
             let bonus = 0;
-            
-            if(thresh === 0 || isNaN(thresh)) {
-                bonus = trips * rate;
-                document.getElementById('trip-threshold-hint').innerText = trips > 0 ? `คิดเหมาทุกเที่ยว (${trips})` : '-';
-            } else {
+            if (thresh > 0) {
                 bonus = trips > thresh ? (trips - thresh) * rate : 0;
                 document.getElementById('trip-threshold-hint').innerText = trips > thresh ? `เกินเกณฑ์ ${trips-thresh} เที่ยว` : `(เกณฑ์: ${thresh})`;
+            } else {
+                bonus = trips * rate;
+                document.getElementById('trip-threshold-hint').innerText = `เหมาจ่ายทุกเที่ยว`;
             }
-            
             document.getElementById('d-trip-bonus').value = bonus; 
-            document.getElementById('d-trip-bonus-disp').innerText = bonus.toLocaleString(undefined, {minimumFractionDigits: 2});
 
             let other = 0; 
-            document.querySelectorAll('.dyn-income-row').forEach(row => { 
-                const amt = parseFloat(row.querySelector('.dyn-amt').value) || 0;
-                other += amt;
-            }); 
+            const otherData = getOtherIncomes();
+            for(let k in otherData) other += otherData[k];
             
             const ded = v('d-deduct-advance') + v('d-deduct-absence'); 
             const net = v('d-wage') + ot + bonus + other - ded; 
@@ -1106,13 +1115,7 @@
             if(!empId) return; 
             const emp = appState.employees.find(e => e.id == empId); 
             
-            let other = {}; 
-            document.querySelectorAll('.dyn-income-row').forEach(row => { 
-                const name = row.querySelector('.dyn-name').value.trim();
-                const amt = parseFloat(row.querySelector('.dyn-amt').value) || 0;
-                if(name && amt > 0) other[name] = amt;
-            }); 
-            
+            const other = getOtherIncomes();
             const shift = document.querySelector('input[name="d-shift"]:checked').value; 
             
             const data = { 
@@ -1126,9 +1129,9 @@
                 ot_rate: parseFloat(document.getElementById('d-ot-rate').value) || 0, 
                 ot_total: parseFloat(document.getElementById('d-ot-total').value) || 0, 
                 trip_count: parseFloat(document.getElementById('d-trip-count').value) || 0, 
+                trip_threshold: parseFloat(document.getElementById('d-trip-threshold').value) || 0, 
                 trip_rate: parseFloat(document.getElementById('d-trip-rate').value) || 0, 
                 trip_bonus: parseFloat(document.getElementById('d-trip-bonus').value) || 0, 
-                trip_threshold: parseFloat(document.getElementById('d-trip-threshold').value) || 0,
                 other_income: other, 
                 deduct_advance: parseFloat(document.getElementById('d-deduct-advance').value) || 0, 
                 deduct_absence: parseFloat(document.getElementById('d-deduct-absence').value) || 0, 
@@ -1143,7 +1146,6 @@
                 const idx = appState.dailyRecords.findIndex(r => r.id === data.id); 
                 if(idx > -1) appState.dailyRecords[idx] = data; else appState.dailyRecords.push(data); 
                 filterDailyList(); updateDash(); 
-                updateEmpStatsCard();
                 Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1500, showConfirmButton: false }); 
             } else {
                 Swal.fire('Error', error.message, 'error');
@@ -1153,7 +1155,7 @@
         window.filterDailyList = function() { 
             const date = document.getElementById('d-date').value; 
             const list = appState.dailyRecords.filter(r => r.date === date); 
-            document.getElementById('daily-list').innerHTML = list.length ? list.map(r => `<div class="px-4 py-3 hover:bg-slate-100 flex justify-between items-center group transition"><div><div class="font-bold text-slate-700 text-sm">${r.name}</div><div class="text-[11px] text-slate-500 flex items-center gap-2 mt-1"><span class="px-1.5 py-0.5 rounded font-medium ${r.shift === 'Day' ? 'bg-orange-100 text-orange-600' : 'bg-indigo-100 text-indigo-600'}">${r.shift === 'Day' ? 'กลางวัน' : 'กลางคืน'}</span><span>OT: ${r.ot_hours} ชม.</span><span>หัก: ${(r.deduct_advance+r.deduct_absence).toLocaleString()}</span></div></div><div class="flex items-center gap-3"><span class="font-bold text-blue-600">${r.net_total.toLocaleString()}</span><div class="flex gap-1"><button onclick="viewDaily('${r.id}')" class="w-7 h-7 rounded bg-slate-200 text-slate-600 hover:bg-slate-300 transition flex items-center justify-center"><i class="fa-solid fa-eye text-xs"></i></button><button onclick="setDailyEmp('${r.id}');window.scrollTo({top:0,behavior:'smooth'});" class="w-7 h-7 rounded bg-blue-100 text-blue-600 hover:bg-blue-200 transition flex items-center justify-center"><i class="fa-solid fa-pen text-xs"></i></button><button onclick="deleteDaily('${r.id}')" class="w-7 h-7 rounded bg-red-100 text-red-600 hover:bg-red-200 transition flex items-center justify-center"><i class="fa-solid fa-trash text-xs"></i></button></div></div></div>`).join('') : '<div class="p-8 text-center text-slate-400 text-sm">ยังไม่มีรายการบันทึกของวันนี้</div>'; 
+            document.getElementById('daily-list').innerHTML = list.length ? list.map(r => `<div class="px-4 py-3 hover:bg-slate-50 flex justify-between items-center group transition"><div><div class="font-bold text-slate-700">${r.name}</div><div class="text-[10px] text-slate-500 flex items-center gap-1 mt-1"><span class="px-1.5 py-0.5 rounded ${r.shift === 'Day' ? 'bg-orange-100 text-orange-600' : 'bg-indigo-100 text-indigo-600'}">${r.shift === 'Day' ? 'กลางวัน' : 'กลางคืน'}</span><span>OT: ${r.ot_hours} ชม.</span></div></div><div class="flex items-center gap-2"><span class="font-bold text-blue-600 mr-2">${r.net_total.toLocaleString()}</span><div class="flex gap-1"><button onclick="viewDaily('${r.id}')" class="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200"><i class="fa-solid fa-eye text-xs"></i></button><button onclick="selectDailyEmpFromList('${r.emp_id}');" class="w-7 h-7 flex items-center justify-center rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100"><i class="fa-solid fa-pen text-xs"></i></button><button onclick="deleteDaily('${r.id}')" class="w-7 h-7 flex items-center justify-center rounded-full bg-red-50 text-red-600 hover:bg-red-100"><i class="fa-solid fa-trash text-xs"></i></button></div></div></div>`).join('') : '<div class="p-8 text-center text-slate-400 text-sm">ยังไม่มีรายการบันทึกของวันนี้</div>'; 
             document.getElementById('daily-count-badge').innerText = list.length;
         }
 
@@ -1161,15 +1163,15 @@
             const r = appState.dailyRecords.find(d => d.id === id); 
             if(!r) return; 
             const other = r.other_income || {}; 
-            const otherText = Object.entries(other).map(([k,v]) => `<div class="flex justify-between"><span>${k}</span><span>${v.toLocaleString()}</span></div>`).join('') || '<div class="text-slate-400 text-xs">-</div>'; 
+            const otherText = Object.entries(other).map(([k,v]) => `<div class="flex justify-between"><span>${k}</span><span>${v}</span></div>`).join('') || '-'; 
             
-            const thresh = r.trip_threshold || 0;
-            const extra = r.trip_count > thresh ? r.trip_count - thresh : 0;
-            const tripDetail = thresh === 0 ? `ค่าเที่ยวเหมา (${r.trip_count} เที่ยว)` : `โบนัสเที่ยว (${r.trip_count} เที่ยว) ${extra > 0 ? `<span class='text-xs text-purple-600 font-bold'>(เที่ยวพิเศษ ${extra})</span>` : ''}`;
+            const thresh = parseFloat(r.trip_threshold) || 0;
+            const extra = thresh > 0 && r.trip_count > thresh ? r.trip_count - thresh : 0;
+            const tripDetail = `โบนัสเที่ยว (${r.trip_count} เที่ยว) ${extra > 0 ? `<span class='text-[10px] text-purple-600 font-bold'>(เกินเกณฑ์ ${extra})</span>` : ''}`;
 
             Swal.fire({ 
                 title: r.name, 
-                html: `<div class="text-sm text-left space-y-2"><div class="flex justify-between border-b pb-1"><span>กะ</span><span class="font-bold">${r.shift === 'Day' ? 'กลางวัน' : 'กลางคืน'}</span></div><div class="flex justify-between border-b pb-1"><span>ค่าแรง</span><span>${r.wage.toLocaleString()}</span></div><div class="flex justify-between border-b pb-1"><span>OT (${r.ot_hours} ชม.)</span><span>${r.ot_total.toLocaleString()}</span></div><div class="flex justify-between border-b pb-1"><span>${tripDetail}</span><span>${r.trip_bonus.toLocaleString()}</span></div><div class="bg-slate-50 p-2 rounded"><b>รายได้อื่นๆ:</b>${otherText}</div><div class="flex justify-between text-red-600 font-bold"><span>หัก (เบิก/ขาด)</span><span>${(r.deduct_advance + r.deduct_absence).toLocaleString()}</span></div><div class="mt-2 text-slate-500 italic text-xs">หมายเหตุ: ${r.remarks || '-'}</div><div class="text-right text-2xl font-bold mt-4 text-blue-600">สุทธิ: ${r.net_total.toLocaleString()}</div></div>`, 
+                html: `<div class="text-sm text-left space-y-2"><div class="flex justify-between border-b pb-1"><span>กะ</span><span class="font-bold">${r.shift === 'Day' ? 'กลางวัน' : 'กลางคืน'}</span></div><div class="flex justify-between border-b pb-1"><span>ค่าแรง</span><span>${r.wage.toLocaleString()}</span></div><div class="flex justify-between border-b pb-1"><span>OT (${r.ot_hours} ชม.)</span><span>${r.ot_total.toLocaleString()}</span></div><div class="flex justify-between border-b pb-1"><span>${tripDetail}</span><span>${r.trip_bonus.toLocaleString()}</span></div><div class="bg-slate-50 p-2 rounded"><b>รายได้อื่นๆ:</b>${otherText}</div><div class="flex justify-between text-red-600"><span>หัก (เบิก/ขาด)</span><span>${(r.deduct_advance + r.deduct_absence).toLocaleString()}</span></div><div class="mt-2 text-slate-500 italic text-xs">หมายเหตุ: ${r.remarks || '-'}</div><div class="text-right text-xl font-bold mt-4 text-blue-600">สุทธิ: ${r.net_total.toLocaleString()}</div></div>`, 
                 confirmButtonText: 'ปิด', 
                 confirmButtonColor: '#64748b' 
             }); 
@@ -1182,7 +1184,6 @@
                 if(!error) {
                     appState.dailyRecords = appState.dailyRecords.filter(r => r.id != id); 
                     filterDailyList(); updateDash(); 
-                    updateEmpStatsCard();
                     Swal.fire('ลบเรียบร้อย', '', 'success'); 
                 }
             } 
@@ -1210,9 +1211,6 @@
                 
                 const date = document.getElementById('d-date').value; 
                 const exist = appState.dailyRecords.find(r => r.date === date && r.emp_id === empId); 
-                
-                document.getElementById('dynamic-income-list').innerHTML = ''; // Clear dynamic rows
-                
                 if(exist) { 
                     document.getElementById('d-record-id').value = exist.id; 
                     document.getElementById('d-wage').value = exist.wage; 
@@ -1220,21 +1218,18 @@
                     document.getElementById('d-ot-hours').value = exist.ot_hours; 
                     document.getElementById('d-ot-rate').value = exist.ot_rate; 
                     document.getElementById('d-trip-count').value = exist.trip_count; 
+                    document.getElementById('d-trip-threshold').value = exist.trip_threshold !== undefined ? exist.trip_threshold : 0; 
                     document.getElementById('d-trip-rate').value = exist.trip_rate; 
-                    document.getElementById('d-trip-threshold').value = exist.trip_threshold !== undefined ? exist.trip_threshold : '';
                     document.getElementById('d-deduct-advance').value = exist.deduct_advance; 
                     document.getElementById('d-deduct-absence').value = exist.deduct_absence; 
                     const shifts = document.getElementsByName('d-shift'); 
                     shifts.forEach(s => s.checked = (s.value === (exist.shift || 'Day'))); 
                     
-                    const o = exist.other_income || {}; 
-                    Object.entries(o).forEach(([k, v]) => addDynamicIncomeRow(k, v));
-                    
+                    renderOtherIncomesData(exist.other_income || {});
                 } else { 
                     resetDailyForm(false); 
                     document.getElementById('d-record-id').value = ''; 
                 } 
-                checkEmptyDyn();
                 calcDaily(); 
             } catch(e) { console.error(e); } 
         }
@@ -1262,6 +1257,9 @@
             const grandTotal = totalWage + totalOt + totalTripBonus + totalOther - totalDeduct; 
             
             document.getElementById('stat-days').innerText = records.length; 
+            document.getElementById('stat-ot').innerText = totalOt.toLocaleString(); 
+            document.getElementById('stat-trip').innerText = totalTripBonus.toLocaleString(); 
+            document.getElementById('stat-deduct').innerText = totalDeduct.toLocaleString(); 
             document.getElementById('stat-total').innerText = grandTotal.toLocaleString(); 
             document.getElementById('stat-period-label').innerText = `งวด: ${period} (${month}/${year})`; 
             document.getElementById('emp-stats-area').classList.remove('hidden'); 
@@ -1269,6 +1267,7 @@
 
         window.resetDailyForm = function(clearEmp = true) { 
             if(clearEmp) {
+                window.selectedDailyEmpId = null;
                 document.getElementById('d-emp').value = ''; 
                 renderDailyEmpList(document.getElementById('d-emp-search').value);
             }
@@ -1279,10 +1278,9 @@
             document.getElementById('d-ot-total').value = '0'; 
             document.getElementById('d-ot-total-disp').innerText = '0.00'; 
             document.getElementById('d-trip-count').value = ''; 
-            document.getElementById('d-trip-threshold').value = ''; 
+            document.getElementById('d-trip-threshold').value = '0'; 
             document.getElementById('d-trip-rate').value = '10'; 
             document.getElementById('d-trip-bonus').value = '0'; 
-            document.getElementById('d-trip-bonus-disp').innerText = '0.00';
             document.getElementById('d-deduct-advance').value = ''; 
             document.getElementById('d-deduct-absence').value = ''; 
             document.getElementById('d-remarks').value = ''; 
@@ -1291,10 +1289,7 @@
             document.getElementById('sum-other-all').innerText = '0.00'; 
             document.getElementById('sum-deduct').innerText = '0.00'; 
             document.getElementById('d-net-total').innerText = '0.00'; 
-            
-            document.getElementById('dynamic-income-list').innerHTML = '';
-            checkEmptyDyn();
-
+            renderOtherIncomesData({}); 
             const r = document.querySelector('input[name="d-shift"][value="Day"]'); if(r) r.checked = true; 
             if(clearEmp) { 
                 document.getElementById('btn-save-daily').disabled = true; 
@@ -1388,6 +1383,7 @@
                 renderEmpTable(currentEmpFilter); renderContractorPage(); 
                 document.getElementById('empModal').classList.add('hidden'); 
                 Swal.fire('บันทึกสำเร็จ', '', 'success'); 
+                renderDailyEmpList();
             }
         }
 
@@ -1403,6 +1399,7 @@
                 if(!error) {
                     appState.employees = appState.employees.filter(e => e.id != id); 
                     renderEmpTable(currentEmpFilter);
+                    renderDailyEmpList();
                 }
             }
         }
@@ -1462,10 +1459,11 @@
             document.getElementById('inp-p-incentive').value = ot + bonus + otherDaily; 
             document.getElementById('inp-p-advance').value = deductAdv; 
             
-            const ssoRate = parseFloat(appState.settings.sso_rate || 0.05); 
-            const ssoMax = parseFloat(appState.settings.sso_max || 750);
+            // Logic หัก 5% (สูงสุด 750 บาท) เฉพาะงวดที่ 1
             let sso = 0; 
-            if(period === 1) { // Deduct ONLY on period 1
+            if(period === 1) { 
+                const ssoRate = parseFloat(appState.settings.sso_rate || 5) / 100; // stored as 5
+                const ssoMax = parseFloat(appState.settings.sso_max || 750);
                 let base = emp.salary; 
                 if(base > 15000) base = 15000; if(base < 1650) base = 1650; 
                 sso = Math.floor(base * ssoRate); 
@@ -1491,10 +1489,7 @@
             document.getElementById('disp-p-income').innerText = '0.00'; 
             document.getElementById('disp-p-deduct').innerText = '0.00'; 
             document.getElementById('disp-p-net').innerText = '0.00'; 
-            if(clearEmp) {
-                document.getElementById('p-pos-display').innerText = ''; 
-                document.getElementById('btn-save-payroll').disabled = true;
-            }
+            if(clearEmp) document.getElementById('p-pos-display').innerText = ''; 
         }
 
         window.savePayroll = function() { 
@@ -1526,8 +1521,8 @@
 
         window.renderPayrollTempTable = function() { 
             const tbody = document.getElementById('table-payroll-recorded'); 
-            if(appState.payrollTemp.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-slate-400">ยังไม่มีรายการรอบันทึก</td></tr>'; return; } 
-            tbody.innerHTML = appState.payrollTemp.map((t,i) => `<tr><td class="p-4">${t.name}</td><td class="p-4 text-right">${t.salary.toLocaleString()}</td><td class="p-4 text-right text-green-600">${(t.incentive+t.other).toLocaleString()}</td><td class="p-4 text-right text-red-500">${(t.sso+t.tax+t.advance+t.water+t.electricity).toLocaleString()}</td><td class="p-4 text-right font-bold text-blue-600">${(t.student_loan||0).toLocaleString()}</td><td class="p-4 text-right font-bold text-slate-800">${t.net.toLocaleString()}</td><td class="p-4 text-center flex justify-center gap-2"><button onclick="editPayrollTemp(${i})" class="text-blue-500 hover:text-blue-700 mx-1"><i class="fa-solid fa-pen"></i></button><button onclick="removePayrollTemp(${i})" class="text-red-400 hover:text-red-600 mx-1" title="ลบ"><i class="fa-solid fa-trash"></i></button></td></tr>`).join(''); 
+            if(appState.payrollTemp.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400">ยังไม่มีรายการ</td></tr>'; return; } 
+            tbody.innerHTML = appState.payrollTemp.map((t,i) => `<tr><td class="p-4">${t.name}</td><td class="p-4 text-right">${t.salary.toLocaleString()}</td><td class="p-4 text-right text-green-600">${(t.incentive+t.other).toLocaleString()}</td><td class="p-4 text-right text-red-500">${(t.sso+t.tax+t.advance+t.water+t.electricity+(t.student_loan||0)).toLocaleString()}</td><td class="p-4 text-right font-bold text-slate-800">${t.net.toLocaleString()}</td><td class="p-4 text-center flex justify-center gap-2"><button onclick="editPayrollTemp(${i})" class="text-blue-500 hover:text-blue-700 mx-1"><i class="fa-solid fa-pen"></i></button><button onclick="removePayrollTemp(${i})" class="text-red-400 hover:text-red-600 mx-1" title="ลบ"><i class="fa-solid fa-trash"></i></button></td></tr>`).join(''); 
         }
 
         window.editPayrollTemp = function(index) {
@@ -1548,7 +1543,7 @@
             document.getElementById('inp-p-sso').value = data.sso;
             document.getElementById('inp-p-tax').value = data.tax;
             document.getElementById('inp-p-advance').value = data.advance;
-            document.getElementById('inp-p-student-loan').value = data.student_loan || 0;
+            document.getElementById('inp-p-student-loan').value = data.student_loan || '';
             document.getElementById('inp-p-water').value = data.water;
             document.getElementById('inp-p-electricity').value = data.electricity;
             
@@ -1617,7 +1612,7 @@
                 const idx = appState.projects.findIndex(p => p.id == d.id); 
                 if(idx > -1) appState.projects[idx] = d; else appState.projects.push(d); 
                 resetContractorForm(); renderContractorList(); 
-                Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', html: 'ต้องการพิมพ์ใบสำคัญจ่ายเลยไหม?', showCancelButton: true, confirmButtonText: 'พิมพ์เลย', cancelButtonText: 'ไว้ก่อน' }).then(r => { if(r.isConfirmed) printPaymentVoucher(d.id); }); 
+                Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', html: 'ต้องการพิมพ์ใบสำคัญจ่ายเลยไหม?', showCancelButton: true, confirmButtonText: 'พิมพ์เลย' }).then(r => { if(r.isConfirmed) printPaymentVoucher(d.id); }); 
             }
         }
 
@@ -1637,7 +1632,7 @@
             document.getElementById('con-stat-tax').innerText = list.reduce((s,i)=>s+i.tax,0).toLocaleString(); 
             document.getElementById('c-list').innerHTML = list.map(p => { 
                 const emp = appState.employees.find(e => e.id == p.emp_id) || {fname:'Unknown', lname:''}; 
-                return `<tr class="hover:bg-slate-50 border-b"><td class="p-4 text-xs">${p.date}</td><td class="p-4"><div class="font-bold text-slate-700">${emp.fname} ${emp.lname}</div><div class="text-xs text-slate-500">${p.job_name}</div></td><td class="p-4 text-right">${p.amount.toLocaleString()}</td><td class="p-4 text-right text-red-500">${p.tax.toLocaleString()}</td><td class="p-4 text-right font-bold text-green-700">${p.net.toLocaleString()}</td><td class="p-4 text-center flex justify-center gap-1"><button onclick="viewProject('${p.id}')" class="w-8 h-8 rounded bg-slate-100 text-slate-600 hover:bg-slate-200"><i class="fa-solid fa-eye"></i></button><button onclick="printPaymentVoucher('${p.id}')" class="w-8 h-8 rounded bg-slate-800 text-white hover:bg-slate-700"><i class="fa-solid fa-print"></i></button><button onclick="editProject('${p.id}')" class="w-8 h-8 rounded bg-blue-100 text-blue-600 hover:bg-blue-200"><i class="fa-solid fa-pen"></i></button><button onclick="delProject('${p.id}')" class="w-8 h-8 rounded bg-red-100 text-red-600 hover:bg-red-200"><i class="fa-solid fa-trash"></i></button></td></tr>`; 
+                return `<tr class="hover:bg-slate-50 border-b"><td class="p-4 text-xs">${p.date}</td><td class="p-4"><div class="font-bold text-slate-700">${emp.fname} ${emp.lname}</div><div class="text-xs text-slate-500">${p.job_name}</div></td><td class="p-4 text-right">${p.amount.toLocaleString()}</td><td class="p-4 text-right text-red-500">${p.tax.toLocaleString()}</td><td class="p-4 text-right font-bold text-green-700">${p.net.toLocaleString()}</td><td class="p-4 text-center flex justify-center gap-1"><button onclick="viewProject('${p.id}')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-600"><i class="fa-solid fa-eye"></i></button><button onclick="printPaymentVoucher('${p.id}')" class="w-8 h-8 rounded-full bg-slate-800 text-white"><i class="fa-solid fa-print"></i></button><button onclick="editProject('${p.id}')" class="w-8 h-8 rounded-full bg-blue-100 text-blue-600"><i class="fa-solid fa-pen"></i></button><button onclick="delProject('${p.id}')" class="w-8 h-8 rounded-full bg-red-100 text-red-600"><i class="fa-solid fa-trash"></i></button></td></tr>`; 
             }).join(''); 
         }
 
@@ -1647,7 +1642,7 @@
             Swal.fire({ title: 'รายละเอียดงาน', html: `<div class="text-left space-y-2 text-sm"><div class="font-bold border-b pb-1">ข้อมูลงาน</div><div class="flex justify-between"><span>วันที่:</span><span>${p.date}</span></div><div class="flex justify-between"><span>ผู้รับเหมา:</span><span>${emp.fname} ${emp.lname}</span></div><div class="flex justify-between"><span>ชื่องาน:</span><span>${p.job_name}</span></div><div class="font-bold border-b pb-1 mt-3">การจ่ายเงิน</div><div class="flex justify-between"><span>ค่าจ้าง:</span><span>${p.amount.toLocaleString()}</span></div><div class="flex justify-between text-red-500"><span>หัก ณ ที่จ่าย (${p.wht_rate}%):</span><span>${p.tax.toLocaleString()}</span></div><div class="flex justify-between font-bold text-green-600 text-lg"><span>สุทธิ:</span><span>${p.net.toLocaleString()}</span></div><div class="flex justify-between mt-2 text-xs text-slate-400"><span>วันที่จ่าย:</span><span>${p.payment_date||'-'}</span></div></div>`, showCloseButton: true, showConfirmButton: false }); 
         }
 
-        window.resetContractorForm = function() { document.getElementById('c-id').value = ''; document.getElementById('c-emp').value = ''; document.getElementById('c-job').value = ''; document.getElementById('c-amount').value = ''; document.querySelector('input[name="c-wht"][value="0"]').checked = true; calcWHT(); }
+        window.resetContractorForm = function() { document.getElementById('c-id').value = ''; document.getElementById('c-emp').value = ''; document.getElementById('c-job').value = ''; document.getElementById('c-amount').value = ''; document.querySelector('input[value="0"]').checked = true; calcWHT(); }
 
         window.editProject = function(id) { 
             const p = appState.projects.find(x => x.id == id); 
@@ -1722,7 +1717,7 @@
             let sIn=0, sEx=0; 
             document.getElementById('l-list').innerHTML = list.map(l => { 
                 sIn += l.income; sEx += l.expense; 
-                return `<tr class="hover:bg-slate-50 border-b"><td class="p-4 text-xs">${l.date}</td><td class="p-4 font-bold text-slate-700">${l.description}</td><td class="p-4 text-xs"><span class="bg-slate-100 text-slate-500 px-2 py-1 rounded">${l.category||'-'}</span></td><td class="p-4 text-right text-green-600">${l.income>0 ? l.income.toLocaleString() : '-'}</td><td class="p-4 text-right text-red-500">${l.expense>0 ? l.expense.toLocaleString() : '-'}</td><td class="p-4 text-center flex justify-center gap-1"><button onclick="editLedger('${l.id}')" class="w-8 h-8 rounded bg-blue-100 text-blue-600 hover:bg-blue-200"><i class="fa-solid fa-pen"></i></button><button onclick="delLedger('${l.id}')" class="w-8 h-8 rounded bg-red-100 text-red-600 hover:bg-red-200"><i class="fa-solid fa-trash"></i></button></td></tr>`; 
+                return `<tr class="hover:bg-slate-50 border-b"><td class="p-4 text-xs">${l.date}</td><td class="p-4 font-bold text-slate-700">${l.description}</td><td class="p-4 text-xs bg-slate-50 text-slate-500">${l.category||'-'}</td><td class="p-4 text-right text-green-600">${l.income>0 ? l.income.toLocaleString() : '-'}</td><td class="p-4 text-right text-red-500">${l.expense>0 ? l.expense.toLocaleString() : '-'}</td><td class="p-4 text-center flex justify-center gap-1"><button onclick="editLedger('${l.id}')" class="text-blue-500 hover:text-blue-700 mx-1"><i class="fa-solid fa-pen"></i></button><button onclick="delLedger('${l.id}')" class="text-red-400 hover:text-red-600 mx-1"><i class="fa-solid fa-trash"></i></button></td></tr>`; 
             }).join(''); 
             document.getElementById('ldg-sum-inc').innerText = sIn.toLocaleString(); 
             document.getElementById('ldg-sum-exp').innerText = sEx.toLocaleString(); 
@@ -1773,8 +1768,8 @@
             filteredReportData = appState.history.filter(h => h.month === m && h.year === y && (p === 'all' || h.period == p)); 
             const monthNames = ["", "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."]; 
             document.getElementById('rpt-list').innerHTML = filteredReportData.map(h => { 
-                const income = h.salary + h.incentive + h.other; const deduct = h.sso + h.tax + h.advance + h.water + h.electricity + (h.student_loan || 0); 
-                return `<tr class="hover:bg-slate-50 transition"><td class="p-2 border text-center"><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-bold">${h.period}</span></td><td class="p-2 border text-center">${monthNames[h.month]}</td><td class="p-2 border text-center">${h.year}</td><td class="p-2 border font-mono text-xs">${h.emp_id}</td><td class="p-2 border font-bold text-slate-700">${h.name}</td><td class="p-2 border text-slate-600 text-xs">${h.pos}</td><td class="p-2 border text-right">${h.salary.toLocaleString()}</td><td class="p-2 border text-right">${h.incentive.toLocaleString()}</td><td class="p-2 border text-right">${h.other.toLocaleString()}</td><td class="p-2 border text-right text-green-700 font-bold bg-green-50/30">${income.toLocaleString()}</td><td class="p-2 border text-right">${h.sso.toLocaleString()}</td><td class="p-2 border text-right">${h.tax.toLocaleString()}</td><td class="p-2 border text-right">${h.advance.toLocaleString()}</td><td class="p-2 border text-right">${h.water.toLocaleString()}</td><td class="p-2 border text-right">${h.electricity.toLocaleString()}</td><td class="p-2 border text-right font-bold text-blue-600 bg-blue-50/30">${(h.student_loan||0).toLocaleString()}</td><td class="p-2 border text-right text-red-600 font-bold bg-red-50/30">${deduct.toLocaleString()}</td><td class="p-2 border text-right font-bold text-slate-800 text-lg bg-slate-100">${h.net.toLocaleString()}</td></tr>`; 
+                const income = h.salary + h.incentive + h.other; const deduct = h.sso + h.tax + h.advance + (h.student_loan||0) + h.water + h.electricity; 
+                return `<tr class="hover:bg-slate-50 border-b"><td class="p-4 text-center"><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-bold">${h.period}</span></td><td class="p-4 text-center">${monthNames[h.month]}</td><td class="p-4 text-center">${h.year}</td><td class="p-4 font-mono text-xs">${h.emp_id}</td><td class="p-4 font-bold text-slate-700">${h.name}</td><td class="p-4 text-slate-600">${h.pos}</td><td class="p-4 text-right">${h.salary.toLocaleString()}</td><td class="p-4 text-right">${h.incentive.toLocaleString()}</td><td class="p-4 text-right">${h.other.toLocaleString()}</td><td class="p-4 text-right text-green-600 font-bold">${income.toLocaleString()}</td><td class="p-4 text-right">${h.sso.toLocaleString()}</td><td class="p-4 text-right">${h.tax.toLocaleString()}</td><td class="p-4 text-right">${h.advance.toLocaleString()}</td><td class="p-4 text-right">${(h.student_loan||0).toLocaleString()}</td><td class="p-4 text-right">${h.water.toLocaleString()}</td><td class="p-4 text-right">${h.electricity.toLocaleString()}</td><td class="p-4 text-right text-red-500 font-bold">${deduct.toLocaleString()}</td><td class="p-4 text-right font-bold text-slate-800 text-lg">${h.net.toLocaleString()}</td></tr>`; 
             }).join(''); 
             document.getElementById('export-buttons-area').style.display = filteredReportData.length ? 'flex' : 'none'; 
         }
@@ -1782,7 +1777,7 @@
         window.filterContractorReport = function() { 
             const m = parseInt(document.getElementById('rpt-c-month').value); const y = parseInt(document.getElementById('rpt-c-year').value); 
             const list = appState.projects.filter(p => { const d = new Date(p.date); return d.getMonth()+1 === m && d.getFullYear() === y; }); 
-            document.getElementById('rpt-c-list').innerHTML = list.map(p => { const emp = appState.employees.find(e => e.id == p.emp_id) || {fname:'Unknown', lname:''}; return `<tr class="hover:bg-slate-50 border-b"><td class="p-4 text-xs">${p.date}</td><td class="p-4"><div class="font-bold text-slate-700">${emp.fname} ${emp.lname}</div><div class="text-xs text-slate-500">${p.job_name}</div></td><td class="p-4 text-right">${p.amount.toLocaleString()}</td><td class="p-4 text-right text-red-500">${p.tax.toLocaleString()}</td><td class="p-4 text-right font-bold text-green-700">${p.net.toLocaleString()}</td><td class="p-4 text-center"><button onclick="printPaymentVoucher('${p.id}')" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-slate-700"><i class="fa-solid fa-print"></i> พิมพ์</button></td></tr>`; }).join(''); 
+            document.getElementById('rpt-c-list').innerHTML = list.map(p => { const emp = appState.employees.find(e => e.id == p.emp_id) || {fname:'Unknown', lname:''}; return `<tr class="hover:bg-slate-50 border-b"><td class="p-4 text-xs">${p.date}</td><td class="p-4"><div class="font-bold text-slate-700">${emp.fname} ${emp.lname}</div><div class="text-xs text-slate-500">${p.job_name}</div></td><td class="p-4 text-right">${p.amount.toLocaleString()}</td><td class="p-4 text-right text-red-500">${p.tax.toLocaleString()}</td><td class="p-4 text-right font-bold text-green-700">${p.net.toLocaleString()}</td><td class="p-4 text-center"><button onclick="printPaymentVoucher('${p.id}')" class="bg-slate-800 text-white px-3 py-1 rounded text-xs">พิมพ์</button></td></tr>`; }).join(''); 
         }
 
         window.filterLedgerReport = function() { 
@@ -1801,24 +1796,29 @@
             const p = parseInt(document.getElementById('rpt-t-period').value);
             const type = document.querySelector('input[name="rpt-t-type"]:checked').value;
             
+            // 1. Determine Date Range
             let startDate = 1, endDate = 15;
             let lastDayOfMonth = new Date(y, m, 0).getDate();
             if (p === 2) { startDate = 16; endDate = lastDayOfMonth; }
             
+            // 2. Filter Employees
             let emps = appState.employees.filter(e => e.status !== 'Resigned');
             
+            // Filter Logic
             if (type === 'All') {
                 emps = emps.filter(e => e.pos && (e.pos.includes('แม็คโคร') || e.pos.includes('Macro') || e.pos.includes('สิบล้อ') || e.pos.includes('Truck')));
             }
             else if (type === 'Macro') emps = emps.filter(e => e.pos && (e.pos.includes('แม็คโคร') || e.pos.includes('Macro')));
             else if (type === 'Truck') emps = emps.filter(e => e.pos && (e.pos.includes('สิบล้อ') || e.pos.includes('Truck')));
             
+            // 3. Build Table Header
             let headerHTML = `<th class="p-2 border bg-slate-100 text-left min-w-[150px]">ชื่อพนักงาน</th>`;
             for(let d = startDate; d <= endDate; d++) {
                 headerHTML += `<th class="p-2 border bg-slate-100 text-center w-10 text-xs">${d}</th>`;
             }
-            headerHTML += `<th class="p-2 border bg-green-50 text-center w-16 text-xs font-bold text-green-700">รวม</th>`;
+            headerHTML += `<th class="p-2 border bg-green-50 text-center w-16 text-xs font-bold">รวม</th>`;
             
+            // 4. Build Table Body
             let bodyHTML = '';
             let dailyTotals = {}; 
             for(let d = startDate; d <= endDate; d++) dailyTotals[d] = 0;
@@ -1843,6 +1843,7 @@
                 bodyHTML += `<tr>${rowHTML}</tr>`;
             });
             
+            // 5. Build Footer (Grand Total)
             let footerHTML = `<td class="p-2 border bg-slate-200 font-bold text-right text-xs">รวมรายวัน</td>`;
             let grandTotal = 0;
             for(let d = startDate; d <= endDate; d++) {
@@ -1853,13 +1854,13 @@
             
             const monthNames = ["", "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
             const tableHTML = `
-                <div class="text-center mb-4 p-4 border-b">
-                    <h3 class="text-lg font-bold text-slate-800">สรุปจำนวนเที่ยวรายวัน (${type === 'All' ? 'เฉพาะ แม็คโคร/สิบล้อ' : (type === 'Macro' ? 'แม็คโคร' : 'สิบล้อ')})</h3>
+                <div class="text-center mb-4">
+                    <h3 class="text-lg font-bold">สรุปจำนวนเที่ยวรายวัน (${type === 'All' ? 'เฉพาะ แม็คโคร/สิบล้อ' : (type === 'Macro' ? 'แม็คโคร' : 'สิบล้อ')})</h3>
                     <p class="text-sm text-slate-500">ประจำเดือน ${monthNames[m]} ${y} (งวดที่ ${p})</p>
                 </div>
                 <table class="w-full border-collapse">
                     <thead><tr>${headerHTML}</tr></thead>
-                    <tbody class="divide-y divide-slate-100">${bodyHTML}</tbody>
+                    <tbody>${bodyHTML}</tbody>
                     <tfoot><tr>${footerHTML}</tr></tfoot>
                 </table>
             `;
@@ -1870,7 +1871,8 @@
 
         window.generateSlipHTML = function(data) {
              const income = data.salary + data.incentive + data.other;
-             const deduct = data.sso + data.tax + data.advance + data.water + data.electricity + (data.student_loan || 0);
+             const deduct = data.sso + data.tax + data.advance + data.water + data.electricity + (data.student_loan||0);
+             // Store current data for Single Slip Print
              window.currentSlipData = data;
 
              const html = `
@@ -1905,13 +1907,13 @@
                         <div class="flex justify-between text-sm mb-1"><span>ประกันสังคม</span><span>${data.sso.toLocaleString()}</span></div>
                         <div class="flex justify-between text-sm mb-1"><span>ภาษี</span><span>${data.tax.toLocaleString()}</span></div>
                         <div class="flex justify-between text-sm mb-1"><span>เบิกล่วงหน้า</span><span>${data.advance.toLocaleString()}</span></div>
-                        <div class="flex justify-between text-sm mb-1"><span>ค่าน้ำ/ไฟ</span><span>${(data.water+data.electricity).toLocaleString()}</span></div>
                         <div class="flex justify-between text-sm mb-1"><span>กยศ.</span><span>${(data.student_loan||0).toLocaleString()}</span></div>
-                        <div class="flex justify-between text-sm mt-2 pt-2 border-t font-bold text-red-700"><span>รวมหัก</span><span>${deduct.toLocaleString()}</span></div>
+                        <div class="flex justify-between text-sm mb-1"><span>ค่าน้ำ/ไฟ</span><span>${(data.water+data.electricity).toLocaleString()}</span></div>
+                        <div class="flex justify-between text-sm mt-2 pt-2 border-t font-bold"><span>รวมหัก</span><span>${deduct.toLocaleString()}</span></div>
                     </div>
                 </div>
                 <div class="bg-slate-50 rounded-xl p-4 flex justify-between items-center border border-slate-200">
-                    <div class="text-xs text-slate-500">โอนเข้าบัญชี: ${data.bank || '-'}<br>วันที่จ่าย: ${new Date().toLocaleDateString('th-TH')}</div>
+                    <div class="text-xs text-slate-500">โอนเข้าบัญชี: ${data.bank}<br>วันที่จ่าย: ${new Date().toLocaleDateString('th-TH')}</div>
                     <div class="text-right">
                         <div class="text-xs text-slate-400 uppercase font-bold">Net Pay</div>
                         <div class="text-3xl font-bold text-slate-800">${data.net.toLocaleString()} <span class="text-sm font-normal text-slate-500">THB</span></div>
@@ -1921,19 +1923,22 @@
              document.getElementById('payslip-content').innerHTML = html;
         }
 
-        // ==========================================
-        // ฟังก์ชันส่งออก Excel (เพิ่มใหม่ + กยศ)
+         // ==========================================
+        // ฟังก์ชันส่งออก Excel
         // ==========================================
         window.exportToExcel = function() {
+            // 1. ตรวจสอบข้อมูล
             if(!filteredReportData || filteredReportData.length === 0) {
                 return Swal.fire('ไม่มีข้อมูล', 'กรุณากดปุ่ม "ค้นหา" เพื่อดึงข้อมูลก่อนส่งออกครับ', 'warning');
             }
 
+            // 2. ดึงข้อมูลส่วนหัว (บริษัท, ที่อยู่, ฯลฯ) จากการตั้งค่า
             const settings = appState.settings || {};
             const companyName = settings.company_name || 'บริษัท (ไม่ได้ระบุชื่อ)';
             const address = settings.company_address || '';
             const taxId = settings.tax_id ? `เลขประจำตัวผู้เสียภาษี: ${settings.tax_id}` : '';
 
+            // 3. ดึงข้อมูลงวด/เดือน/ปี ที่เลือกอยู่หน้าเว็บ
             const mSelect = document.getElementById('rpt-month');
             const monthText = mSelect.options[mSelect.selectedIndex].text;
             const yearText = document.getElementById('rpt-year').value;
@@ -1942,56 +1947,62 @@
 
             const reportTitle = `รายงานสรุปเงินเดือน ประจำเดือน ${monthText} ปี ${yearText} (${periodText})`;
 
+            // 4. สร้างโครงสร้างข้อมูลสำหรับ Excel (Array of Arrays)
             const wsData = [
-                [companyName],            
-                [address],                
-                [taxId],                  
-                [],                       
-                [reportTitle],            
-                [],                       
-                ['งวด', 'เดือน', 'ปี', 'รหัสพนักงาน', 'ชื่อ-นามสกุล', 'ตำแหน่ง', 'เงินเดือน', 'ค่าตอบแทน', 'รายได้อื่นๆ', 'รวมรับ', 'ประกันสังคม', 'ภาษี', 'เบิกล่วงหน้า', 'ค่าน้ำ', 'ค่าไฟ', 'กยศ.', 'รวมหัก', 'ยอดสุทธิ', 'ธนาคาร']
+                [companyName],           // แถว 1: ชื่อบริษัท
+                [address],               // แถว 2: ที่อยู่
+                [taxId],                 // แถว 3: เลขภาษี
+                [],                      // แถว 4: เว้นว่าง
+                [reportTitle],           // แถว 5: หัวข้อรายงาน
+                [],                      // แถว 6: เว้นว่าง
+                // แถว 7: หัวตาราง (Header Columns)
+                ['งวด', 'เดือน', 'ปี', 'รหัสพนักงาน', 'ชื่อ-นามสกุล', 'ตำแหน่ง', 'เงินเดือน', 'ค่าตอบแทน', 'รายได้อื่นๆ', 'รวมรับ', 'ประกันสังคม', 'ภาษี', 'เบิกล่วงหน้า', 'กยศ.', 'ค่าน้ำ', 'ค่าไฟ', 'รวมหัก', 'ยอดสุทธิ', 'ธนาคาร']
             ];
 
+            // 5. วนลูปเอาข้อมูลพนักงานใส่เข้าไปทีละแถว
             filteredReportData.forEach(item => {
                 const income = item.salary + item.incentive + item.other;
-                const deduct = item.sso + item.tax + item.advance + item.water + item.electricity + (item.student_loan || 0);
+                const deduct = item.sso + item.tax + item.advance + item.water + item.electricity + (item.student_loan||0);
                 
                 wsData.push([
-                    item.period,                
-                    monthText,                  
-                    item.year,                  
-                    item.emp_id,                
-                    item.name,                  
-                    item.pos,                   
-                    item.salary,                
-                    item.incentive,             
-                    item.other,                 
-                    income,                     
-                    item.sso,                   
-                    item.tax,                   
-                    item.advance,               
-                    item.water,                 
-                    item.electricity,
-                    item.student_loan || 0,           
-                    deduct,                     
-                    item.net,                   
-                    item.bank || '-'            
+                    item.period,                // งวด
+                    monthText,                  // เดือน (ใช้ชื่อเดือนแทนตัวเลข)
+                    item.year,                  // ปี
+                    item.emp_id,                // รหัส
+                    item.name,                  // ชื่อ
+                    item.pos,                   // ตำแหน่ง
+                    item.salary,                // เงินเดือน
+                    item.incentive,             // ค่าตอบแทน
+                    item.other,                 // อื่นๆ
+                    income,                     // รวมรับ
+                    item.sso,                   // ประกันสังคม
+                    item.tax,                   // ภาษี
+                    item.advance,               // เบิก
+                    (item.student_loan||0),     // กยศ.
+                    item.water,                 // น้ำ
+                    item.electricity,           // ไฟ
+                    deduct,                     // รวมหัก
+                    item.net,                   // สุทธิ
+                    item.bank || '-'            // ธนาคาร
                 ]);
             });
 
+            // 6. สร้าง Workbook และ Worksheet
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.aoa_to_sheet(wsData);
 
+            // (Optional) จัดความกว้างคอลัมน์ให้สวยงาม (หน่วยเป็นตัวอักษร)
             ws['!cols'] = [
                 {wch: 5}, {wch: 10}, {wch: 6}, {wch: 12}, {wch: 25}, {wch: 20}, 
                 {wch: 12}, {wch: 12}, {wch: 12}, {wch: 15}, 
                 {wch: 12}, {wch: 10}, {wch: 12}, {wch: 10}, {wch: 10}, {wch: 10}, {wch: 15}, {wch: 15}, {wch: 20}
             ];
 
+            // 7. รวมร่างและดาวน์โหลดไฟล์
             XLSX.utils.book_append_sheet(wb, ws, "Payroll_Report");
             XLSX.writeFile(wb, `Salary_Report_${yearText}_${monthText}.xlsx`);
         };
-
+        
         window.saveSettings = async function(e) { 
             e.preventDefault(); 
             const updates = [
